@@ -1,23 +1,25 @@
-import { IsNotEmpty, IsString, IsArray, ValidateNested, IsNumber, IsOptional } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  MaxLength,
+  IsInt,
+} from "class-validator";
 
-// 1. Buat Sub-Schema untuk Sparepart
-export class PartItemDto {
-  @IsString() @IsNotEmpty() part_no!: string;
-  @IsString() @IsNotEmpty() part_name!: string;
-  @IsNumber() @IsNotEmpty() quantity!: number;
-  @IsNumber() @IsNotEmpty() unit_price!: number;
-}
-
-// 2. Schema Utama Teknisi
 export class UpdateTechRequestDto {
-  @IsString() @IsNotEmpty() technician_name!: string;
-  @IsString() @IsNotEmpty() tech_remarks!: string;
+  // --- Target: Tabel Service Requests ---
+  @IsString()
+  @IsNotEmpty({
+    message: "Deskripsi masalah (problemDescription) wajib diisi oleh teknisi",
+  })
+  problemDescription!: string;
 
-  // 3. Array of Spareparts (Opsional, karena tidak semua servis butuh part)
+  @IsString()
   @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true }) // Validasi setiap isi array
-  @Type(() => PartItemDto) // Beritahu NestJS bentuk array-nya
-  parts?: PartItemDto[];
+  @MaxLength(50) // Sesuai varchar(50)
+  statusService?: string;
+
+  @IsInt({ message: "ID Teknisi harus berupa angka (int)" })
+  @IsOptional()
+  technicianFixId?: number; // Sesuai int("tech_fix_id")
 }

@@ -1,25 +1,52 @@
-import { IsNotEmpty, IsOptional, IsString, IsEmail, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  MaxLength,
+  IsIn,
+} from "class-validator";
 
 export class CreateServiceRequestDto {
-  // WAJIB: Gunakan tanda ! agar TypeScript tidak protes
-  @IsString() @IsNotEmpty() customer_name!: string;
-  @IsString() @IsNotEmpty() phone_number!: string;
-  @IsString() @IsNotEmpty() address_1!: string;
-  @IsString() @IsNotEmpty() address_3!: string;
-  @IsString() @IsNotEmpty() machine_model!: string;
-  @IsString() @IsNotEmpty() problem_desc!: string;
-  @IsString() @IsNotEmpty() warranty_status!: string;
-  @IsString() @IsNotEmpty() service_mode!: string;
+  // --- Target: Tabel Customers ---
+  @IsString()
+  @IsNotEmpty({ message: "Nama pelanggan (customers.name) wajib diisi" })
+  @MaxLength(255) // Sesuai varchar(255)
+  customerName?: string;
 
-  // OPSIONAL: Gunakan tanda ? karena memang boleh kosong
-  @IsOptional() @IsString() customer_type?: string;
-  @IsOptional() @IsString() service_action?: string;
-  @IsOptional() @IsString() contact_person?: string;
-  @IsOptional() @IsString() address_2?: string;
-  @IsOptional() @IsEmail() email?: string;
-  @IsOptional() @IsString() serial_number?: string;
-  @IsOptional() @IsString() ink_type?: string;
-  @IsOptional() @IsString() accessories?: string;
-  @IsOptional() @IsNumber() onsite_cost?: number;
-  @IsOptional() @IsNumber() other_cost?: number;
+  @IsString()
+  @IsOptional()
+  address?: string; // Sesuai text("address")
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(50) // Sesuai varchar(50)
+  customerType?: string;
+
+  // --- Target: Tabel Customer Phones ---
+  @IsString()
+  @IsNotEmpty({ message: "Nomor telepon (customer_phones.phone) wajib diisi" })
+  @MaxLength(50) // Sesuai varchar(50)
+  phone?: string;
+
+  // --- Target: Tabel Products ---
+  @IsString()
+  @IsNotEmpty({ message: "Model barang (products.modelName) wajib diisi" })
+  @MaxLength(100) // Sesuai varchar(100)
+  modelName?: string;
+
+  @IsString()
+  @IsNotEmpty({ message: "Serial Number (products.serialNumber) wajib diisi" })
+  @MaxLength(100) // Sesuai varchar(100)
+  serialNumber?: string;
+
+  // --- Target: Tabel Service Requests ---
+  @IsNotEmpty()
+  @IsIn(["WARRANTY", "NON_WARRANTY"], {
+    message: "Tipe servis harus WARRANTY atau NON_WARRANTY",
+  })
+  serviceType?: "WARRANTY" | "NON_WARRANTY"; // Sesuai mysqlEnum
+
+  @IsString()
+  @IsOptional()
+  problemDescription?: string; // Sesuai text("problem_description")
 }

@@ -62,7 +62,11 @@ async function runSeeder() {
   console.log("🚀 Memulai penarikan data dari Excel ke Database...");
 
   // GANTI NAMA FILE DI SINI sesuai yang ingin Mas Irgi tarik
-  const filePath = path.join(__dirname, "data", "dataset warranty 2026.csv");
+  const filePath = path.join(
+    __dirname,
+    "data",
+    "dataset mipsys non warranty 2026.csv",
+  );
 
   const rawData = await readCSV(filePath);
 

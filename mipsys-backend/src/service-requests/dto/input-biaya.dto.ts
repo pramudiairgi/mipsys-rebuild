@@ -1,18 +1,15 @@
-import { IsNumber, IsOptional, Min } from 'class-validator';
+import { IsNumber, Min } from "class-validator";
 
 export class InputBiayaDto {
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  labor_cost?: number; 
+  // --- Target: Tabel Service Requests ---
+  // Drizzle menyimpan tipe decimal sebagai string, tapi dari sisi Frontend (JSON),
+  // kasir akan mengirim angka murni. Kita validasi sebagai number di sini.
 
-  @IsOptional()
-  @IsNumber()
+  @IsNumber({}, { message: "Biaya jasa (serviceFee) harus berupa angka" })
   @Min(0)
-  onsite_cost?: number;
+  serviceFee!: number; // Sesuai decimal("service_fee")
 
-  @IsOptional()
-  @IsNumber()
+  @IsNumber({}, { message: "Biaya part (partFee) harus berupa angka" })
   @Min(0)
-  other_cost?: number; 
+  partFee!: number; // Sesuai decimal("part_fee")
 }

@@ -1,13 +1,4 @@
 {
-<<<<<<< HEAD
   "singleQuote": true,
   "trailingComma": "all"
-=======
-  "semi": true,
-  "trailingComma": "es5",
-  "singleQuote": false,
-  "printWidth": 100,
-  "tabWidth": 2,
-  "useTabs": false
->>>>>>> 41068a2 (frontend-v2)
 }
