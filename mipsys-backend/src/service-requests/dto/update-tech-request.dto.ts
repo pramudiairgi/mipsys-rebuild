@@ -1,25 +1,30 @@
+import { Type } from "class-transformer";
 import {
   IsString,
   IsNotEmpty,
   IsOptional,
-  MaxLength,
   IsInt,
+  ValidateNested,
+  IsArray,
 } from "class-validator";
+import { PartItemDto } from "./part-item.dto"; // <--- Import dari file baru
 
 export class UpdateTechRequestDto {
-  // --- Target: Tabel Service Requests ---
+  @IsInt({ message: "ID Teknisi harus berupa angka (int)" })
+  @IsNotEmpty()
+  technicianFixId!: number;
+
   @IsString()
-  @IsNotEmpty({
-    message: "Deskripsi masalah (problemDescription) wajib diisi oleh teknisi",
-  })
+  @IsNotEmpty()
   problemDescription!: string;
 
-  @IsString()
   @IsOptional()
-  @MaxLength(50) // Sesuai varchar(50)
+  @IsString()
   statusService?: string;
 
-  @IsInt({ message: "ID Teknisi harus berupa angka (int)" })
   @IsOptional()
-  technicianFixId?: number; // Sesuai int("tech_fix_id")
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PartItemDto) // <--- Sekarang mengambil dari import di atas
+  parts?: PartItemDto[];
 }
