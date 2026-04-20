@@ -14,8 +14,63 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, ExternalLink } from 'lucide-react';
+
+// HELPER: Logika Status Badge (Visual Mapping)
+const getStatusConfig = (statusService: string, statusSystem: string) => {
+  // 1. Jika sistem sudah ditutup (CLOSED)
+  if (statusSystem === 'CLOSED') {
+    return {
+      label: 'Selesai',
+      variant: 'secondary' as const,
+      className: 'opacity-60',
+    };
+  }
+
+  // 2. Pemetaan status saat sistem masih OPEN
+  switch (statusService) {
+    case 'WAITING CHECK':
+    case 'PENDING CHECK':
+      return {
+        label: 'Baru (Antre)',
+        variant: 'default' as const,
+        className: 'bg-slate-900 text-white',
+      };
+
+    case 'SERVICE':
+    case 'IN SERVICE':
+      return {
+        label: 'Dikerjakan',
+        variant: 'default' as const,
+        className: 'bg-blue-600 text-white',
+      };
+
+    case 'WITH PART':
+    case 'PENDING PART':
+      return {
+        label: 'Menunggu Part',
+        variant: 'outline' as const,
+        className: 'border-orange-500 text-orange-600 font-bold',
+      };
+
+    case 'DONE':
+    case 'READY':
+      return {
+        label: 'Siap Ambil',
+        variant: 'default' as const,
+        className: 'bg-green-600 text-white animate-pulse',
+      };
+
+    default:
+      return {
+        label: statusService || 'Unknown',
+        variant: 'outline' as const,
+        className: 'text-slate-500',
+      };
+  }
+};
 
 export function DashboardTable() {
   const [data, setData] = useState<ServiceRequest[]>([]);
@@ -29,12 +84,11 @@ export function DashboardTable() {
     try {
       setIsLoading(true);
       const result = await srApi.getAll(searchTerm, page, limit);
-
-      // Pastikan data yang diambil adalah array
+      // Validasi apakah result adalah array atau objek dengan properti data
       const dataArray = Array.isArray(result) ? result : result.data || [];
       setData(dataArray);
     } catch (error) {
-      console.error('Gagal mengambil data SR:', error);
+      console.error('Gagal fetch data SR:', error);
     } finally {
       setIsLoading(false);
     }
@@ -51,8 +105,8 @@ export function DashboardTable() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* BAGIAN ATAS: Kotak Pencarian */}
+    <div className="space-y-6">
+      {/* SEKSI SEARCH */}
       <div className="flex items-center justify-between bg-white p-4 rounded-xl border shadow-sm">
         <form
           onSubmit={handleSearch}
@@ -61,142 +115,163 @@ export function DashboardTable() {
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Cari nama pelanggan, model, atau No SR..."
+              placeholder="Cari pelanggan, model, atau No SR..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-9"
+              className="pl-9 border-slate-200 focus:ring-slate-900"
             />
           </div>
-          <Button type="submit" variant="default" className="bg-slate-900">
+          <Button type="submit" className="bg-slate-900 hover:bg-slate-800">
             Cari
           </Button>
         </form>
       </div>
 
-      {/* BAGIAN TENGAH: Tabel Data */}
-      <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader className="bg-slate-50">
-            <TableRow>
-              <TableHead className="font-bold">No. SR</TableHead>
-              <TableHead className="font-bold">Nama Pelanggan</TableHead>
-              <TableHead className="font-bold">Model Mesin</TableHead>
-              {/* KOLOM BARU */}
-              <TableHead className="font-bold text-blue-600">
-                Serial Number
-              </TableHead>
-              <TableHead className="font-bold">Mode Servis</TableHead>
-              <TableHead className="font-bold">Status</TableHead>
-              <TableHead className="font-bold">Tanggal Masuk</TableHead>
-              <TableHead className="text-right font-bold">Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+      {/* SEKSI TABEL UTAMA */}
+      <Card className="border shadow-md overflow-hidden rounded-xl bg-white">
+        <CardHeader className="bg-slate-50/50 border-b py-4">
+          <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-500">
+            Daftar Antrean Servis Mipsys
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-slate-50/80">
               <TableRow>
-                <TableCell
-                  colSpan={8} // Update colSpan menjadi 8 karena tambah 1 kolom
-                  className="text-center py-20 text-muted-foreground"
-                >
-                  <div className="flex flex-col items-center gap-2">
-                    <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
-                    <p>Menghubungkan ke server Mipsys...</p>
-                  </div>
-                </TableCell>
+                <TableHead className="font-bold text-slate-800">
+                  No. SR
+                </TableHead>
+                <TableHead className="font-bold text-slate-800">
+                  Pelanggan
+                </TableHead>
+                <TableHead className="font-bold text-slate-800">
+                  Model Mesin
+                </TableHead>
+                <TableHead className="font-bold text-blue-600">
+                  Serial Number
+                </TableHead>
+                <TableHead className="font-bold text-slate-800">Mode</TableHead>
+                <TableHead className="font-bold text-slate-800">
+                  Status
+                </TableHead>
+                <TableHead className="font-bold text-slate-800">
+                  Masuk
+                </TableHead>
+                <TableHead className="text-right font-bold text-slate-800">
+                  Aksi
+                </TableHead>
               </TableRow>
-            ) : data.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="text-center py-20 text-muted-foreground"
-                >
-                  {searchTerm
-                    ? 'Data tidak ditemukan.'
-                    : 'Belum ada data Service Request.'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              data.map((sr) => (
-                <TableRow
-                  key={sr.id}
-                  className="hover:bg-slate-50/50 transition-colors"
-                >
-                  <TableCell className="font-bold text-slate-700">
-                    {sr.ticketNumber}
-                  </TableCell>
-                  <TableCell className="max-w-50 truncate">
-                    {sr.customerName}
-                  </TableCell>
-                  <TableCell>{sr.modelName}</TableCell>
-
-                  {/* ISI DATA SERIAL NUMBER */}
-                  <TableCell>
-                    <code className="text-[11px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-mono border border-blue-100">
-                      {sr.serialNumber || '-'}
-                    </code>
-                  </TableCell>
-
-                  <TableCell>{sr.serviceType}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        sr.statusSystem === '0' ? 'default' : 'secondary'
-                      }
-                      className={sr.statusSystem === '0' ? 'bg-slate-900' : ''}
-                    >
-                      {sr.statusSystem === '0'
-                        ? 'Baru'
-                        : sr.statusSystem === '1'
-                          ? 'Diproses'
-                          : 'Selesai'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-slate-500">
-                    {new Date(sr.incomingDate).toLocaleDateString('id-ID')}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Link href={`/service-request/${sr.ticketNumber}`}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="hover:bg-slate-900 hover:text-white transition-all"
-                      >
-                        Detail
-                      </Button>
-                    </Link>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-24">
+                    <div className="flex flex-col items-center gap-3">
+                      <Loader2 className="h-10 w-10 animate-spin text-slate-300" />
+                      <p className="text-slate-400 text-sm animate-pulse">
+                        Menghubungkan ke Database...
+                      </p>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ) : data.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={8}
+                    className="text-center py-24 text-slate-400 italic"
+                  >
+                    Belum ada data permintaan servis yang terdaftar.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data.map((sr) => {
+                  // MEMPERBAIKI SCOPE: Definisikan config di dalam loop
+                  const config = getStatusConfig(
+                    sr.statusService,
+                    sr.statusSystem,
+                  );
 
-      {/* BAGIAN BAWAH: Navigasi Paginasi */}
-      <div className="flex items-center justify-between py-2 px-1">
-        <p className="text-sm text-slate-500">
-          Menampilkan <span className="font-bold">{data.length}</span> data per
-          halaman
+                  return (
+                    <TableRow
+                      key={sr.id}
+                      className="hover:bg-slate-50/50 transition-colors group"
+                    >
+                      <TableCell className="font-bold text-slate-900">
+                        {sr.ticketNumber}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {sr.customerName}
+                      </TableCell>
+                      <TableCell className="text-slate-600">
+                        {sr.modelName}
+                      </TableCell>
+                      <TableCell>
+                        <code className="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100 font-mono shadow-sm">
+                          {sr.serialNumber || '-'}
+                        </code>
+                      </TableCell>
+                      <TableCell className="text-xs font-semibold">
+                        {sr.serviceType}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={config.variant}
+                          className={config.className}
+                        >
+                          {config.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-slate-500 text-xs">
+                        {new Date(sr.incomingDate).toLocaleDateString('id-ID')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link href={`/service-request/${sr.ticketNumber}`}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="group-hover:bg-slate-900 group-hover:text-white transition-all"
+                          >
+                            Detail <ExternalLink className="ml-2 h-3 w-3" />
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* SEKSI PAGINASI */}
+      <div className="flex items-center justify-between px-2">
+        <p className="text-[11px] text-slate-400 font-medium">
+          Menampilkan{' '}
+          <span className="text-slate-900 font-bold">{data.length}</span>{' '}
+          catatan pada halaman ini
         </p>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
             size="sm"
+            className="h-8 shadow-sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1 || isLoading}
           >
-            Sebelumnya
+            Kembali
           </Button>
-          <div className="bg-slate-100 px-3 py-1 rounded text-sm font-bold text-slate-700">
+          <div className="h-8 w-8 flex items-center justify-center bg-slate-900 text-white rounded text-xs font-black">
             {page}
           </div>
           <Button
             variant="outline"
             size="sm"
+            className="h-8 shadow-sm"
             onClick={() => setPage((p) => p + 1)}
             disabled={data.length < limit || isLoading}
           >
-            Selanjutnya
+            Lanjut
           </Button>
         </div>
       </div>
