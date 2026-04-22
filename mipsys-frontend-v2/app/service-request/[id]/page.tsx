@@ -233,65 +233,97 @@ export default function ServiceRequestDetailPage() {
             </div>
           </div>
 
-          {/* LAPORAN TEKNISI (Hanya muncul jika sudah bukan WAITING CHECK) */}
-          <div className="bg-white p-6 rounded-xl border shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-6 flex items-center gap-2">
-              Laporan Hasil Diagnosa
+          {/* LAPORAN HASIL DIAGNOSA */}
+          <div className="bg-white p-6 rounded-xl border shadow-sm space-y-6">
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+              <Stethoscope className="h-4 w-4" /> Laporan Hasil Diagnosa
             </h3>
-            {!isNew ? (
+
+            {/* LOGIKA: Cek apakah sudah ada tindakan teknisi (problemDescription berubah atau status bukan WAITING) */}
+            {!isNew || sr.technicianFixId ? (
               <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600">
-                    T
+                {/* 1. INFO TEKNISI */}
+                <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <div className="h-10 w-10 rounded-full bg-slate-900 flex items-center justify-center font-bold text-white shadow-md">
+                    {sr.technicianFixId ? 'T' : '?'}
                   </div>
                   <div>
-                    <p className="font-bold text-slate-800">Teknisi</p>
-                    <p className="text-sm text-slate-500">
-                      ID Teknisi: {sr.technicianFixId || 'Menunggu assign'}
+                    <p className="text-[10px] font-black text-slate-400 uppercase">
+                      Teknisi Penanggung Jawab
+                    </p>
+                    <p className="font-bold text-slate-800">
+                      {/* Jika Mas sudah join table staff, ganti dengan sr.technicianName */}
+                      ID Teknisi: {sr.technicianFixId || 'Belum diassign'}
                     </p>
                   </div>
                 </div>
 
-                {/* TABEL BIAYA */}
-                <div className="pt-4 space-y-2">
-                  <div className="flex justify-between text-sm py-2 border-b">
-                    <span className="text-slate-500">
-                      Estimasi Biaya Sparepart
+                {/* 2. HASIL ANALISA (CATATAN) */}
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-black text-slate-400 tracking-wider">
+                    Hasil Analisa & Tindakan
+                  </label>
+                  <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
+                    <p className="text-slate-700 leading-relaxed italic">
+                      "{sr.problemDescription || 'Tidak ada catatan teknisi'}"
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. RINCIAN BIAYA & SPAREPART */}
+                <div className="pt-4 border-t border-dashed space-y-3">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-500 font-medium">
+                      Biaya Suku Cadang (Sparepart)
                     </span>
-                    <span className="font-bold">
+                    <span className="font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-full">
                       Rp {partFee.toLocaleString('id-ID')}
                     </span>
                   </div>
 
+                  {/* HANYA MUNCUL JIKA SUDAH DI KASIR (CLOSED) */}
                   {isClosed && (
-                    <>
-                      <div className="flex justify-between text-sm py-2 border-b">
-                        <span className="text-slate-500">
-                          Biaya Jasa (Service Fee)
+                    <div className="space-y-3 pt-3 border-t">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">
+                          Biaya Jasa Servis
                         </span>
-                        <span className="font-bold">
+                        <span className="font-bold text-slate-900">
                           Rp {serviceFee.toLocaleString('id-ID')}
                         </span>
                       </div>
-                      <div className="flex justify-between text-sm py-2 border-b text-blue-600">
-                        <span className="font-medium">PPN (11%)</span>
+                      <div className="flex justify-between text-sm text-blue-600">
+                        <span className="font-medium">Pajak PPN (11%)</span>
                         <span className="font-bold">
                           Rp {taxAmount.toLocaleString('id-ID')}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xl py-4 text-green-700">
-                        <span className="font-black">TOTAL AKHIR</span>
-                        <span className="font-black underline underline-offset-4">
-                          Rp {totalAmount.toLocaleString('id-ID')}
+                      <div className="flex justify-between text-xl pt-4 border-t-2 border-slate-900 items-baseline">
+                        <span className="font-black text-slate-900 uppercase">
+                          Total Akhir
                         </span>
+                        <div className="text-right">
+                          <span className="text-2xl font-black text-green-600">
+                            Rp {totalAmount.toLocaleString('id-ID')}
+                          </span>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase italic">
+                            Lunas / Terbayar
+                          </p>
+                        </div>
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="text-center py-10 border-2 border-dashed rounded-xl text-slate-400">
-                Menunggu diagnosa dari teknisi...
+              /* Tampilan saat Masih Baru (Waiting) */
+              <div className="text-center py-16 border-2 border-dashed rounded-2xl bg-slate-50/50 flex flex-col items-center gap-3">
+                <div className="p-3 bg-white rounded-full shadow-sm">
+                  <Loader2 className="h-6 w-6 text-slate-300 animate-spin" />
+                </div>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+                  Menunggu pemeriksaan teknisi...
+                </p>
               </div>
             )}
           </div>

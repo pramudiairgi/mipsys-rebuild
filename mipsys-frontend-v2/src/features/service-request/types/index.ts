@@ -10,11 +10,7 @@ export interface ServiceRequest {
   // PERANGKAT (Hasil Join)
   modelName: string;
   serialNumber: string;
-
-  // LOGIKA STATUS (Paling Penting!)
-  // Kita kunci nilainya agar tidak bisa diisi sembarang teks
   serviceType: 'WARRANTY' | 'NON_WARRANTY';
-
   statusService:
     | 'WAITING CHECK'
     | 'PENDING APPROVAL'
@@ -30,7 +26,7 @@ export interface ServiceRequest {
   incomingDate: string;
   createdAt: string;
 
-  // ID STAFF (Gunakan number | null karena di awal data ini kosong)
+  // ID STAFF
   technicianCheckId?: number | null;
   technicianFixId?: number | null;
 
@@ -38,4 +34,15 @@ export interface ServiceRequest {
   partFee: string; // Biaya sparepart
   serviceFee: string; // Biaya jasa teknisi
   onsiteFee: string; // Biaya kunjungan/transport
+}
+
+export interface UpdateDiagnosisPayload {
+  technicianFixId: number;
+  problemDescription: string;
+  statusService: ServiceRequest['statusService']; // Ambil tipe dari interface utama
+  parts: {
+    partName: string;
+    quantity: number;
+    unitPrice: number;
+  }[];
 }
