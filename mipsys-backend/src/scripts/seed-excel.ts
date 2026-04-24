@@ -1,15 +1,15 @@
-import * as fs from "fs";
-import * as path from "path";
-import csv from "csv-parser";
-import { db } from "../db/db";
+import * as fs from 'fs';
+import * as path from 'path';
+import csv from 'csv-parser';
+import { db } from '../db/db';
 import {
   staff,
   customers,
   customerPhones,
   products,
   serviceRequests,
-} from "../db/schema";
-import { eq, and } from "drizzle-orm";
+} from '../db/schema';
+import { eq, and } from 'drizzle-orm';
 
 // --- 1. Fungsi Utilitas ---
 
@@ -18,17 +18,17 @@ function readCSV(filePath: string): Promise<any[]> {
   return new Promise((resolve, reject) => {
     const results: any[] = [];
     fs.createReadStream(filePath)
-      .pipe(csv({ separator: ";" }))
-      .on("data", (data: any) => results.push(data))
-      .on("end", () => resolve(results))
-      .on("error", (error) => reject(error));
+      .pipe(csv({ separator: ';' }))
+      .on('data', (data: any) => results.push(data))
+      .on('end', () => resolve(results))
+      .on('error', (error) => reject(error));
   });
 }
 
 // B. Penerjemah Tanggal (Mengatasi bulan "Agu", "Mei", "Okt" dari Excel)
 function parseDate(dateStr: string | undefined): Date | null {
   if (!dateStr) return null;
-  const parts = dateStr.trim().split("-");
+  const parts = dateStr.trim().split('-');
   if (parts.length !== 3) return null;
 
   const day = parseInt(parts[0], 10);
@@ -54,19 +54,9 @@ function parseDate(dateStr: string | undefined): Date | null {
   return new Date(year, month, day);
 }
 
-// --- 2. Mesin Penarik Data (Script Puller) ---
-// ... (Bagian import dan fungsi utilitas di atasnya TETAP SAMA) ...
-
-// --- 2. Mesin Penarik Data (Script Puller) ---
 async function runSeeder() {
-  console.log("🚀 Memulai penarikan data dari Excel ke Database...");
-
-  // GANTI NAMA FILE DI SINI sesuai yang ingin Mas Irgi tarik
-  const filePath = path.join(
-    __dirname,
-    "data",
-    "dataset mipsys non warranty 2026.csv",
-  );
+  console.log('🚀 Memulai penarikan data dari Excel ke Database...');
+  const filePath = path.join(__dirname, 'data', 'dataset warranty 2026.csv');
 
   const rawData = await readCSV(filePath);
 
@@ -80,26 +70,26 @@ async function runSeeder() {
 
   for (const row of rawData) {
     // --- A. Ekstrak & Bersihkan Nomor Tiket ---
-    let rawTicket = row["RMA"] || row["INC NO"] || row["SR NO"];
+    let rawTicket = row['RMA'] || row['INC NO'] || row['SR NO'];
 
     if (
       !rawTicket ||
-      typeof rawTicket !== "string" ||
-      rawTicket.trim() === ""
+      typeof rawTicket !== 'string' ||
+      rawTicket.trim() === ''
     ) {
       continue; // Skip jika benar-benar kosong
     }
 
     // Pembersihan Ekstrem: Hapus spasi depan/belakang, ambil sebelum '/'
-    let ticketNumber = rawTicket.split("/")[0].trim();
+    let ticketNumber = rawTicket.split('/')[0].trim();
 
     // --- B. Ekstrak & Bersihkan Serial Number (Untuk Kunci Unik) ---
-    let rawSn = row["SN"] || row["SERIAL NUMBER"];
-    let sn = rawSn && typeof rawSn === "string" ? rawSn.trim() : "UNKNOWN_SN"; // Default jika kosong
+    let rawSn = row['SN'] || row['SERIAL NUMBER'];
+    let sn = rawSn && typeof rawSn === 'string' ? rawSn.trim() : 'UNKNOWN_SN'; // Default jika kosong
 
     // --- C. BUAT KUNCI UNIK (TICKET + SN) ---
     // Pastikan tidak ada spasi sama sekali di kunci ini agar perbandingan 100% akurat
-    const uniqueKey = `${ticketNumber}_${sn}`.replace(/\s+/g, "");
+    const uniqueKey = `${ticketNumber}_${sn}`.replace(/\s+/g, '');
 
     // LAPIS 1: Cek di Memori (Buku Catatan Bouncer)
     if (processedTickets.has(uniqueKey)) {
@@ -110,9 +100,9 @@ async function runSeeder() {
     // --- D. Ekstrak Product ID (Untuk Lapis 2) ---
     let productId: number | null = null;
     const model =
-      row["PRODUCT TYPE"]?.trim() || row["TYPE"]?.trim() || "UNKNOWN";
+      row['PRODUCT TYPE']?.trim() || row['TYPE']?.trim() || 'UNKNOWN';
 
-    if (sn !== "UNKNOWN_SN") {
+    if (sn !== 'UNKNOWN_SN') {
       if (!productCache.has(sn)) {
         let prod = await db
           .select()
@@ -144,8 +134,8 @@ async function runSeeder() {
           .where(
             and(
               eq(serviceRequests.ticketNumber, ticketNumber),
-              eq(serviceRequests.productId, productId),
-            ),
+              eq(serviceRequests.productId, productId)
+            )
           );
 
         if (existingInDb.length > 0) {
@@ -169,7 +159,7 @@ async function runSeeder() {
     } catch (error) {
       console.error(
         `Error saat mengecek Lapis 2 untuk tiket ${ticketNumber}:`,
-        error,
+        error
       );
       continue;
     }
@@ -177,15 +167,15 @@ async function runSeeder() {
     // JIKA LOLOS KEDUA LAPISAN (BUKAN DUPLIKAT), BARU EKSTRAK SISA DATANYA
 
     // --- E. Ekstrak Staff ---
-    const rawAdmin = row["ADMIN"]?.trim();
+    const rawAdmin = row['ADMIN']?.trim();
     const adminName = rawAdmin ? rawAdmin.toUpperCase() : null;
 
     const rawTechCheck =
-      row["TECH CHK"]?.trim() || row["TECHNICAL CHECK BY"]?.trim();
+      row['TECH CHK']?.trim() || row['TECHNICAL CHECK BY']?.trim();
     const techCheckName = rawTechCheck ? rawTechCheck.toUpperCase() : null;
 
     const rawTechFix =
-      row["TECH FIX"]?.trim() || row["TECHNICAL FIX BY"]?.trim();
+      row['TECH FIX']?.trim() || row['TECHNICAL FIX BY']?.trim();
     const techFixName = rawTechFix ? rawTechFix.toUpperCase() : null;
 
     let adminId: number | null = null;
@@ -202,7 +192,7 @@ async function runSeeder() {
           .where(eq(staff.name, adminName));
 
         if (existingStaff.length === 0) {
-          await db.insert(staff).values({ name: adminName, role: "ADMIN" });
+          await db.insert(staff).values({ name: adminName, role: 'ADMIN' });
           existingStaff = await db
             .select()
             .from(staff)
@@ -224,7 +214,7 @@ async function runSeeder() {
         if (existingStaff.length === 0) {
           await db
             .insert(staff)
-            .values({ name: techCheckName, role: "TECHNICIAN" });
+            .values({ name: techCheckName, role: 'TECHNICIAN' });
           existingStaff = await db
             .select()
             .from(staff)
@@ -246,7 +236,7 @@ async function runSeeder() {
         if (existingStaff.length === 0) {
           await db
             .insert(staff)
-            .values({ name: techFixName, role: "TECHNICIAN" });
+            .values({ name: techFixName, role: 'TECHNICIAN' });
           existingStaff = await db
             .select()
             .from(staff)
@@ -259,8 +249,8 @@ async function runSeeder() {
 
     // --- F. Ekstrak Customer & Phones ---
     const customerName =
-      row["CUSTOMER NAME"]?.trim() || row["CUSTOMER "]?.trim();
-    const rawPhone = row["PHONE"]?.trim();
+      row['CUSTOMER NAME']?.trim() || row['CUSTOMER ']?.trim();
+    const rawPhone = row['PHONE']?.trim();
 
     let customerId: number | null = null;
 
@@ -268,8 +258,8 @@ async function runSeeder() {
       if (!customerCache.has(customerName)) {
         await db.insert(customers).values({
           name: customerName,
-          address: row["ADDRESS"]?.trim() || row["ALAMAT"]?.trim(),
-          customerType: row["CUSTOMER TYPE"]?.trim() || "PERSONAL",
+          address: row['ADDRESS']?.trim() || row['ALAMAT']?.trim(),
+          customerType: row['CUSTOMER TYPE']?.trim() || 'PERSONAL',
         });
         const res = await db
           .select()
@@ -281,8 +271,8 @@ async function runSeeder() {
 
         if (rawPhone) {
           const phones = rawPhone
-            .split("/")
-            .map((p: string) => p.replace(/\D/g, "").trim())
+            .split('/')
+            .map((p: string) => p.replace(/\D/g, '').trim())
             .filter((p: string) => p.length > 5);
           for (const p of phones) {
             await db
@@ -296,9 +286,9 @@ async function runSeeder() {
     }
 
     // --- G. Proses Insert Akhir (PASTI BUKAN DUPLIKAT) ---
-    const serviceType = ticketNumber.includes("NWRNT")
-      ? "NON_WARRANTY"
-      : "WARRANTY";
+    const serviceType = ticketNumber.includes('NWRNT')
+      ? 'NON_WARRANTY'
+      : 'WARRANTY';
 
     try {
       await db.insert(serviceRequests).values({
@@ -310,14 +300,14 @@ async function runSeeder() {
         technicianCheckId: techCheckId,
         technicianFixId: techFixId,
         problemDescription:
-          row["PROBLEM"]?.trim() || row["PROBLEM DESCRIPTION"]?.trim(),
+          row['PROBLEM']?.trim() || row['PROBLEM DESCRIPTION']?.trim(),
         statusService:
-          row["SERVICE STATUS"]?.trim() || row["STATUS SERVICE"]?.trim(),
+          row['SERVICE STATUS']?.trim() || row['STATUS SERVICE']?.trim(),
         statusSystem:
-          row["SYSTEM STATUS"]?.trim() || row["STATUS SYSTEM"]?.trim(),
-        incomingDate: parseDate(row["INCOMING DATE"]) || new Date(),
-        readyDate: parseDate(row["READY DATE"]),
-        pickUpDate: parseDate(row["PICK UP DATE"]),
+          row['SYSTEM STATUS']?.trim() || row['STATUS SYSTEM']?.trim(),
+        incomingDate: parseDate(row['INCOMING DATE']) || new Date(),
+        readyDate: parseDate(row['READY DATE']),
+        pickUpDate: parseDate(row['PICK UP DATE']),
       });
 
       // ✅ Wajib! Catat Kunci Unik ini ke buku kecil
@@ -329,11 +319,11 @@ async function runSeeder() {
     }
   }
 
-  console.log("🎉 SELURUH DATA SELESAI DIIMPOR!");
+  console.log('🎉 SELURUH DATA SELESAI DIIMPOR!');
   process.exit(0);
 }
 
 runSeeder().catch((err) => {
-  console.error("❌ Terjadi kesalahan fatal:", err);
+  console.error('❌ Terjadi kesalahan fatal:', err);
   process.exit(1);
 });

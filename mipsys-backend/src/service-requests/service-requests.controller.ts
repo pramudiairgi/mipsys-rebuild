@@ -6,16 +6,13 @@ import {
   Param,
   Patch,
   Query,
-  UseInterceptors,
-  UploadedFile,
-  ParseIntPipe, // <--- Tambahan impor
-  DefaultValuePipe, // <--- Tambahan impor
+  ParseIntPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { ServiceRequestService } from './service-requests.service';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { UpdateTechRequestDto } from './dto/update-tech-request.dto';
 import { InputBiayaDto } from './dto/input-biaya.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('service-request')
 export class ServiceRequestsController {
@@ -28,9 +25,12 @@ export class ServiceRequestsController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number
   ) {
-    // Tidak perlu lagi if-else manual di sini!
-    // NestJS sudah menjamin 'page' dan 'limit' pasti berupa angka yang valid.
     return await this.srService.getAllDashboard(search, page, limit);
+  }
+
+  @Get('technicians')
+  async getTechnicians() {
+    return await this.srService.findAllTechnicians();
   }
 
   // Parameter 'id' di sini idealnya diisi dengan Ticket Number (contoh: IDW5-123)
@@ -46,7 +46,7 @@ export class ServiceRequestsController {
   }
 
   // 3. Update Teknisi & Input Sparepart (PATCH)
-  @Patch(':id/technician')
+  @Patch(':id/diagnosis')
   async updateTechnician(
     @Param('id') id: string, // Gunakan Ticket Number
     @Body() updateTechDto: UpdateTechRequestDto
