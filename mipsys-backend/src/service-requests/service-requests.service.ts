@@ -1,11 +1,15 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { eq, desc, like, or, SQL } from 'drizzle-orm';
 import { MySql2Database } from 'drizzle-orm/mysql2';
+import * as schema from '../db/schema';
 import {
   serviceRequests,
   customers,
   products,
   customerPhones,
+  hardwareChecks,
+  orderParts,
+  staff,
 } from 'src/db/schema';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { InputBiayaDto } from './dto/input-biaya.dto';
@@ -13,7 +17,9 @@ import { UpdateTechRequestDto } from './dto/update-tech-request.dto';
 
 @Injectable()
 export class ServiceRequestService {
-  constructor(@Inject('DB_CONNECTION') private db: MySql2Database<any>) {}
+  constructor(
+    @Inject('DB_CONNECTION') private db: MySql2Database<typeof schema>
+  ) {}
 
   /**
    * 1. DASHBOARD RESEPSIONIS
@@ -136,7 +142,7 @@ export class ServiceRequestService {
         const [{ insertId }] = await tx.insert(customers).values({
           name: dto.customerName || 'Tanpa Nama',
           address: dto.address,
-          customerType: dto.customerType || 'PERSONAL',
+          customerType: dto.customerType || 'PRIBADI',
         });
         customerId = insertId;
 
@@ -193,37 +199,103 @@ export class ServiceRequestService {
     });
   }
 
+  async findAllTechnicians() {
+    return await this.db
+      .select()
+      .from(staff)
+      .where(eq(staff.role, 'TECHNICIAN'));
+  }
+
   /**
    * 4. UPDATE OLEH TEKNISI (Diagnosis & Perbaikan)
    */
   async updateTechDiagnosis(ticketNumber: string, dto: UpdateTechRequestDto) {
-    let totalPartFee = 0;
+    // 1. Cari ID Service Request berdasarkan Ticket Number
+    const existingSR = await this.db.query.serviceRequests.findFirst({
+      where: eq(serviceRequests.ticketNumber, ticketNumber),
+    });
 
-    if (dto.parts && dto.parts.length > 0) {
-      totalPartFee = dto.parts.reduce((acc, part) => {
-        const subtotal =
-          (Number(part.quantity) || 0) * (Number(part.unitPrice) || 0);
-        return acc + subtotal;
-      }, 0);
+    if (!existingSR) {
+      throw new Error(`Ticket ${ticketNumber} tidak ditemukan di sistem.`);
     }
 
-    await this.db
-      .update(serviceRequests)
-      .set({
-        statusService: dto.statusService,
-        remarksHistory: dto.remarksHistory, // Sekarang sudah ada kolomnya di DB
-        technicianFixId: dto.technicianFixId,
-        partFee: totalPartFee.toString(),
-        readyDate: dto.statusService === 'DONE' ? new Date() : null,
-        // JANGAN masukkan problemDescription di sini agar keluhan awal pelanggan tetap terjaga
-      })
-      .where(eq(serviceRequests.ticketNumber, ticketNumber));
+    // 2. Kalkulasi Total Biaya Part secara internal untuk partFee
+    const totalPartFee = (dto.parts || []).reduce((acc, part) => {
+      return acc + part.quantity * Number(part.priceAtAction || 0);
+    }, 0);
 
-    return {
-      success: true,
-      totalCalculated: totalPartFee,
-      message: `Diagnosis berhasil disimpan ke riwayat.`,
-    };
+    // 3. Eksekusi Database Transaction (Atomic Process)
+    return await this.db.transaction(async (tx) => {
+      try {
+        // STEP A: Update Tabel Utama (service_requests)
+        await tx
+          .update(serviceRequests)
+          .set({
+            statusService: dto.statusService,
+            technicianFixId: dto.technicianFixId,
+            remarksHistory: dto.remarksHistory,
+            serviceFee: dto.serviceFee?.toString() || '0.00',
+            partFee: totalPartFee.toString(),
+            readyDate:
+              dto.statusService === 'DONE' ? new Date() : existingSR.readyDate,
+            updatedAt: new Date(),
+          })
+          .where(eq(serviceRequests.id, existingSR.id));
+
+        // STEP B: Sync Hardware Checks (PH, MB, PS)
+        if (dto.hardwareCheck) {
+          // Gunakan teknik Delete & Insert atau Upsert untuk tabel Hardware Checks
+          await tx
+            .delete(hardwareChecks)
+            .where(eq(hardwareChecks.serviceRequestId, existingSR.id));
+
+          await tx.insert(hardwareChecks).values({
+            serviceRequestId: existingSR.id,
+            phStatus: dto.hardwareCheck.phStatus,
+            mbStatus: dto.hardwareCheck.mbStatus,
+            psStatus: dto.hardwareCheck.psStatus,
+            othersStatus: dto.hardwareCheck.othersStatus || '',
+          });
+        }
+
+        await tx
+          .update(serviceRequests)
+          .set({
+            remarksHistory: dto.remarksHistory, // Simpan hasil teknisi di sini
+            // problemDescription tidak diupdate kecuali ada revisi keluhan
+            statusService: dto.statusService,
+            technicianFixId: dto.technicianFixId,
+            updatedAt: new Date(),
+          })
+          .where(eq(serviceRequests.id, existingSR.id));
+
+        await tx
+          .delete(orderParts)
+          .where(eq(orderParts.serviceRequestId, existingSR.id));
+
+        // Masukkan rincian part baru dari array DTO
+        if (dto.parts && dto.parts.length > 0) {
+          const partsToInsert = dto.parts.map((p) => ({
+            serviceRequestId: existingSR.id,
+            sparePartId: p.sparePartId || null,
+            quantity: p.quantity,
+            priceAtAction: p.priceAtAction.toString(),
+          }));
+
+          await tx.insert(orderParts).values(partsToInsert);
+        }
+
+        return {
+          success: true,
+          message: `Diagnosis SR-${ticketNumber} berhasil disinkronkan.`,
+          totalBill: Number(dto.serviceFee || 0) + totalPartFee,
+        };
+      } catch (error) {
+        // Jika terjadi error di salah satu step, Drizzle otomatis melakukan ROLLBACK
+        console.error('Transaction Error:', error);
+        throw error;
+      }
+    });
   }
 
   /**
