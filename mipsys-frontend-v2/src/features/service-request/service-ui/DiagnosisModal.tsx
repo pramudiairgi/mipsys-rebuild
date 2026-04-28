@@ -192,7 +192,7 @@ export function DiagnosisModal({
               Analisa Teknis (Diagnosa)
             </Label>
             <Textarea
-              className="min-h-[120px] border-slate-200 rounded-2xl p-5 bg-slate-50/50 font-medium"
+              className="min-h-30 border-slate-200 rounded-2xl p-5 bg-slate-50/50 font-medium"
               placeholder="Isi diagnosa kerusakan..."
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}

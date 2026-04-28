@@ -252,9 +252,13 @@ export class ServiceRequestService {
             technicianFixId: dto.technicianFixId,
             remarksHistory: dto.remarksHistory,
             serviceFee: (dto.serviceFee ?? existingSR.serviceFee)?.toString(),
-            partFee: totalPartFee.toString(),
+            checkDate: existingSR.checkDate ?? new Date(),
+
+            // 2. Jika status berubah jadi DONE, isi readyDate
             readyDate:
               dto.statusService === 'DONE' ? new Date() : existingSR.readyDate,
+
+            partFee: totalPartFee.toString(),
             updatedAt: new Date(),
           })
           .where(eq(serviceRequests.id, existingSR.id));
