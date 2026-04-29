@@ -97,12 +97,14 @@ export class ServiceRequestService {
         // Data Join Customer
         customerName: customers.name,
         customerAddress: customers.address,
+        customerPhone: customerPhones.phone,
         // Data Join Produk
         modelName: products.modelName,
         serialNumber: products.serialNumber,
       })
       .from(serviceRequests)
       .leftJoin(customers, eq(serviceRequests.customerId, customers.id))
+      .leftJoin(customerPhones, eq(customers.id, customerPhones.customerId))
       .leftJoin(products, eq(serviceRequests.productId, products.id))
       .where(eq(serviceRequests.ticketNumber, ticketNumber))
       .limit(1);
@@ -271,6 +273,7 @@ export class ServiceRequestService {
           const partsToInsert = dto.parts.map((p) => ({
             serviceRequestId: existingSR.id,
             sparePartId: p.sparePartId || null,
+            partName: p.partName,
             quantity: p.quantity,
             priceAtAction: p.unitPrice.toString(),
           }));
