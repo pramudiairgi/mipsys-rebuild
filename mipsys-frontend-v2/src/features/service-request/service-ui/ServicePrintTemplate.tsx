@@ -182,7 +182,7 @@ export const ServicePrintTemplate = React.forwardRef<
         </div>
         <div>
           <p className="text-[10px] mb-24 text-slate-400 uppercase font-black tracking-widest">
-            Teknisi MIPSYS
+            Admin
           </p>
           <div className="border-b border-slate-900 w-full"></div>
           <p className="mt-2 font-bold text-sm">MIPSYS Enterprise AAA</p>
