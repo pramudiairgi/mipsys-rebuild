@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useReactToPrint } from 'react-to-print';
 import { Badge } from '@/src/components/ui/badge';
 import { Button } from '@/src/components/ui/button';
 import {
@@ -22,11 +23,12 @@ import {
   Wrench,
   Receipt,
   RefreshCcw,
-  Settings2, // Icon tambahan untuk update status
+  Settings2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { srApi } from '../services/sr-api';
 import { DiagnosisModal } from './DiagnosisModal';
+import { ServicePrintTemplate } from './ServicePrintTemplate'; // Pastikan file ini sudah dibuat
 import { ServiceRequest } from '../types';
 
 interface ServiceRequestDetailProps {
@@ -40,6 +42,15 @@ export default function ServiceRequestDetail({
   const [loading, setLoading] = useState(true);
   const [isDiagnosisOpen, setIsDiagnosisOpen] = useState(false);
 
+  // --- LOGIKA PRINT ---
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Service_Report_${data?.ticketNumber}`,
+  });
+
+  // --- LOGIKA FETCHING ---
   const fetchTicketDetail = useCallback(async () => {
     try {
       setLoading(true);
@@ -57,8 +68,8 @@ export default function ServiceRequestDetail({
     if (id) fetchTicketDetail();
   }, [id, fetchTicketDetail]);
 
+  // --- HELPER & KONDISI ---
   const isChecked = !!data?.remarksHistory;
-
   const showDiagnosisButton = data?.statusSystem !== 'CLOSED';
 
   const getStatusColor = (status: string) => {
@@ -80,7 +91,7 @@ export default function ServiceRequestDetail({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+      <div className="flex flex-col items-center justify-center min-h-100 space-y-4">
         <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
         <p className="text-sm font-bold text-slate-400 animate-pulse uppercase tracking-widest">
           Sinkronisasi Data Mipsys...
@@ -148,6 +159,7 @@ export default function ServiceRequestDetail({
           )}
 
           <Button
+            onClick={handlePrint}
             variant="outline"
             size="icon"
             className="shrink-0 h-12 w-12 rounded-xl border-slate-200 hover:bg-slate-50 transition-colors"
@@ -182,7 +194,7 @@ export default function ServiceRequestDetail({
                 </p>
                 <p className="font-bold text-slate-700 flex items-center gap-2 text-sm font-mono">
                   <Smartphone size={14} className="text-blue-500" />{' '}
-                  {data.customerPhone}
+                  {data.customerPhone || '-'}
                 </p>
               </div>
               <div className="space-y-1">
@@ -214,12 +226,11 @@ export default function ServiceRequestDetail({
         </div>
 
         {/* --- KOLOM KONTEN (KANAN) --- */}
-        <div className="md:col-span-2 space-y-6">
-          {/* Unit & Deskripsi Masalah */}
+        <div className="md:col-span-2 space-y-6 text-left">
           <Card className="border-slate-200 shadow-sm bg-white overflow-hidden rounded-2xl">
             <CardContent className="p-0">
               <div className="grid grid-cols-1 md:grid-cols-2">
-                <div className="p-6 space-y-5 border-r border-slate-100 text-left">
+                <div className="p-6 space-y-5 border-r border-slate-100">
                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                     Identitas Perangkat
                   </h3>
@@ -242,7 +253,7 @@ export default function ServiceRequestDetail({
                     </div>
                   </div>
                 </div>
-                <div className="p-6 bg-red-50/20 text-left relative overflow-hidden group">
+                <div className="p-6 bg-red-50/20 relative overflow-hidden group">
                   <div className="flex items-center gap-2 mb-3">
                     <AlertCircle size={14} className="text-red-500" />
                     <label className="text-[10px] font-black text-red-400 uppercase tracking-widest">
@@ -273,7 +284,7 @@ export default function ServiceRequestDetail({
                 </Badge>
               )}
             </CardHeader>
-            <CardContent className="p-8 text-left">
+            <CardContent className="p-8">
               {!isChecked ? (
                 <div className="py-16 flex flex-col items-center justify-center text-center space-y-4 border-2 border-dashed border-slate-100 rounded-[2.5rem] bg-slate-50/30">
                   <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-slate-300 border border-slate-100">
@@ -283,7 +294,7 @@ export default function ServiceRequestDetail({
                     <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
                       Queueing Phase
                     </p>
-                    <p className="text-xs text-slate-400 font-medium max-w-[200px] leading-relaxed">
+                    <p className="text-xs text-slate-400 font-medium max-w-50 leading-relaxed">
                       Unit sedang menunggu antrean pengerjaan teknisi.
                     </p>
                   </div>
@@ -342,6 +353,7 @@ export default function ServiceRequestDetail({
         </div>
       </div>
 
+      {/* --- MODAL DIAGNOSA --- */}
       <DiagnosisModal
         sr={data}
         isOpen={isDiagnosisOpen}
@@ -351,6 +363,11 @@ export default function ServiceRequestDetail({
           fetchTicketDetail();
         }}
       />
+
+      {/* --- TEMPLATE PRINT (HIDDEN) --- */}
+      <div className="hidden">
+        {data && <ServicePrintTemplate ref={printRef} data={data} />}
+      </div>
     </div>
   );
 }

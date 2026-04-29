@@ -1,5 +1,5 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { eq, desc, like, or, SQL } from 'drizzle-orm';
+import { eq, desc, like, or, SQL, isNotNull, count } from 'drizzle-orm';
 import { MySql2Database } from 'drizzle-orm/mysql2';
 import * as schema from '../db/schema';
 import {
@@ -23,8 +23,70 @@ export class ServiceRequestService {
   ) {}
 
   /**
-   * 1. DASHBOARD RESEPSIONIS
-   * Teroptimasi untuk pencarian cepat dan paginasi
+   * 1. DASHBOARD ANALYTICS (Real-time Stats)
+   * Menghitung jumlah tiket berdasarkan status untuk counter di atas dashboard
+   */
+  async getDashboardStats() {
+    const stats = await this.db
+      .select({
+        status: serviceRequests.statusService,
+        count: count(),
+      })
+      .from(serviceRequests)
+      .groupBy(serviceRequests.statusService);
+
+    // Format data agar mudah dibaca frontend
+    const result = {
+      total: 0,
+      waiting: 0,
+      service: 0,
+      done: 0,
+    };
+
+    stats.forEach((s) => {
+      const val = Number(s.count);
+      result.total += val;
+      if (s.status === 'WAITING CHECK') result.waiting += val;
+      if (s.status === 'SERVICE') result.service += val;
+      if (s.status === 'DONE') result.done += val;
+    });
+
+    return result;
+  }
+
+  /**
+   * 2. LATEST ACTIVITIES
+   * Mengambil riwayat update terakhir untuk log di dashboard
+   */
+  async getLatestActivities() {
+    const logs = await this.db
+      .select({
+        ticketNumber: serviceRequests.ticketNumber,
+        statusService: serviceRequests.statusService,
+        updatedAt: serviceRequests.updatedAt,
+        techName: staff.name,
+      })
+      .from(serviceRequests)
+      .leftJoin(staff, eq(serviceRequests.technicianFixId, staff.id))
+      .where(isNotNull(serviceRequests.updatedAt))
+      .orderBy(desc(serviceRequests.updatedAt))
+      .limit(5);
+
+    return logs.map((log) => ({
+      time: log.updatedAt
+        ? new Date(log.updatedAt).toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : '--:--',
+      user: log.techName || 'System',
+      task: `Tiket #${log.ticketNumber} diperbarui ke status ${log.statusService}`,
+      status: log.statusService,
+    }));
+  }
+
+  /**
+   * 3. DASHBOARD RESEPSIONIS (List Table)
    */
   async getAllDashboard(
     search: string = '',
@@ -62,25 +124,26 @@ export class ServiceRequestService {
       })
       .from(serviceRequests)
       .leftJoin(customers, eq(serviceRequests.customerId, customers.id))
-      .leftJoin(products, eq(serviceRequests.productId, products.id)) // Join ke products agar model & SN terbaca
+      .leftJoin(products, eq(serviceRequests.productId, products.id))
       .where(whereCondition)
       .orderBy(desc(serviceRequests.createdAt))
       .limit(limit)
       .offset(offset);
 
-    const hasNextPage = results.length === limit;
-
     return {
       data: results,
-      meta: { currentPage: page, itemsPerPage: limit, hasNextPage },
+      meta: {
+        currentPage: page,
+        itemsPerPage: limit,
+        hasNextPage: results.length === limit,
+      },
     };
   }
 
   /**
-   * 2. DETAIL TIKET (Pencarian menggunakan Ticket Number)
+   * 4. DETAIL TIKET
    */
   async getDetailByTicketNumber(ticketNumber: string) {
-    // 1. QUERY UTAMA: Ambil data Header, Customer, dan Produk
     const mainRows = await this.db
       .select({
         id: serviceRequests.id,
@@ -94,11 +157,9 @@ export class ServiceRequestService {
         serviceFee: serviceRequests.serviceFee,
         incomingDate: serviceRequests.incomingDate,
         technicianFixId: serviceRequests.technicianFixId,
-        // Data Join Customer
         customerName: customers.name,
         customerAddress: customers.address,
         customerPhone: customerPhones.phone,
-        // Data Join Produk
         modelName: products.modelName,
         serialNumber: products.serialNumber,
       })
@@ -109,13 +170,11 @@ export class ServiceRequestService {
       .where(eq(serviceRequests.ticketNumber, ticketNumber))
       .limit(1);
 
-    if (mainRows.length === 0) {
+    if (mainRows.length === 0)
       throw new NotFoundException(`Tiket ${ticketNumber} tidak ditemukan.`);
-    }
 
     const ticket = mainRows[0];
 
-    // 2. QUERY RINCIAN: Ambil data Suku Cadang (Terpisah agar aman dari LATERAL error)
     const partsRows = await this.db
       .select({
         id: orderParts.id,
@@ -129,10 +188,8 @@ export class ServiceRequestService {
       .leftJoin(spareParts, eq(orderParts.sparePartId, spareParts.id))
       .where(eq(orderParts.serviceRequestId, ticket.id));
 
-    // 3. GABUNGKAN DATA: Format agar sesuai dengan interface Frontend
     return {
       ...ticket,
-      // Pastikan field yang diharapkan frontend ada di sini
       parts: partsRows.map((p) => ({
         sparePartId: p.sparePartId,
         partName: p.savedPartName || p.masterPartName || 'Sparepart',
@@ -143,12 +200,10 @@ export class ServiceRequestService {
   }
 
   /**
-   * 3. CREATE ENTRY (MAKSIMAL: Transaction + Audit Admin + Unique Check)
+   * 5. CREATE ENTRY
    */
   async createEntry(dto: CreateServiceRequestDto, adminId: number) {
-    // Memulai Transaksi Database
     return await this.db.transaction(async (tx) => {
-      // --- A. HANDLING CUSTOMER (Cek Berdasarkan Nama) ---
       let customerId: number;
       const [existingCust] = await tx
         .select()
@@ -165,15 +220,11 @@ export class ServiceRequestService {
           customerType: dto.customerType || 'PRIBADI',
         });
         customerId = insertId;
-
-        // Simpan nomor HP untuk customer baru
-        await tx.insert(customerPhones).values({
-          customerId,
-          phone: dto.phone || '-',
-        });
+        await tx
+          .insert(customerPhones)
+          .values({ customerId, phone: dto.phone || '-' });
       }
 
-      // --- B. HANDLING PRODUCT (Cek Berdasarkan Serial Number) ---
       let productId: number;
       const [existingProd] = await tx
         .select()
@@ -182,7 +233,7 @@ export class ServiceRequestService {
         .limit(1);
 
       if (existingProd) {
-        productId = existingProd.id; // Gunakan produk yang sudah terdaftar
+        productId = existingProd.id;
       } else {
         const [{ insertId }] = await tx.insert(products).values({
           serialNumber: dto.serialNumber || 'SN-UNKNOWN',
@@ -191,18 +242,16 @@ export class ServiceRequestService {
         productId = insertId;
       }
 
-      // --- C. GENERATE TICKET NUMBER ---
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const randomNum = Math.floor(1000 + Math.random() * 9000);
       const newTicketNumber = `SR-${dateStr}-${randomNum}`;
 
-      // --- D. INSERT SERVICE REQUEST (DENGAN ADMIN ID) ---
       await tx.insert(serviceRequests).values({
         ticketNumber: newTicketNumber,
         serviceType: dto.serviceType || 'NON_WARRANTY',
-        customerId: customerId,
-        productId: productId,
-        adminId: adminId,
+        customerId,
+        productId,
+        adminId,
         problemDescription: dto.problemDescription,
         statusService: 'WAITING CHECK',
         statusSystem: 'OPEN',
@@ -214,7 +263,7 @@ export class ServiceRequestService {
       return {
         success: true,
         ticketNumber: newTicketNumber,
-        message: 'Data lengkap berhasil tersimpan di sistem.',
+        message: 'Berhasil tersimpan.',
       };
     });
   }
@@ -227,26 +276,23 @@ export class ServiceRequestService {
   }
 
   /**
-   * 4. UPDATE OLEH TEKNISI (Diagnosis & Perbaikan)
+   * 6. UPDATE OLEH TEKNISI (Refactored)
    */
   async updateTechDiagnosis(ticketNumber: string, dto: UpdateTechRequestDto) {
     const existingSR = await this.db.query.serviceRequests.findFirst({
       where: eq(serviceRequests.ticketNumber, ticketNumber),
     });
 
-    if (!existingSR) {
-      throw new Error(`Ticket ${ticketNumber} tidak ditemukan.`);
-    }
+    if (!existingSR) throw new Error(`Ticket ${ticketNumber} tidak ditemukan.`);
 
-    // 2. Kalkulasi Total Biaya Part secara internal untuk partFee
     const totalPartFee = (dto.parts || []).reduce(
       (acc, p) => acc + Number(p.quantity) * Number(p.unitPrice),
       0
     );
 
-    // 3. Eksekusi Database Transaction (Atomic Process)
     return await this.db.transaction(async (tx) => {
       try {
+        // --- PROSES UTAMA ---
         await tx
           .update(serviceRequests)
           .set({
@@ -255,20 +301,17 @@ export class ServiceRequestService {
             remarksHistory: dto.remarksHistory,
             serviceFee: (dto.serviceFee ?? existingSR.serviceFee)?.toString(),
             checkDate: existingSR.checkDate ?? new Date(),
-
-            // 2. Jika status berubah jadi DONE, isi readyDate
             readyDate:
               dto.statusService === 'DONE' ? new Date() : existingSR.readyDate,
-
             partFee: totalPartFee.toString(),
             updatedAt: new Date(),
           })
           .where(eq(serviceRequests.id, existingSR.id));
 
+        // --- SYNC SPAREPARTS ---
         await tx
           .delete(orderParts)
           .where(eq(orderParts.serviceRequestId, existingSR.id));
-
         if (dto.parts && dto.parts.length > 0) {
           const partsToInsert = dto.parts.map((p) => ({
             serviceRequestId: existingSR.id,
@@ -280,12 +323,11 @@ export class ServiceRequestService {
           await tx.insert(orderParts).values(partsToInsert);
         }
 
-        // STEP B: Sync Hardware Checks (PH, MB, PS)
+        // --- SYNC HARDWARE CHECK ---
         if (dto.hardwareCheck) {
           await tx
             .delete(hardwareChecks)
             .where(eq(hardwareChecks.serviceRequestId, existingSR.id));
-
           await tx.insert(hardwareChecks).values({
             serviceRequestId: existingSR.id,
             phStatus: dto.hardwareCheck.phStatus,
@@ -295,19 +337,9 @@ export class ServiceRequestService {
           });
         }
 
-        await tx
-          .update(serviceRequests)
-          .set({
-            remarksHistory: dto.remarksHistory,
-            statusService: dto.statusService,
-            technicianFixId: dto.technicianFixId,
-            updatedAt: new Date(),
-          })
-          .where(eq(serviceRequests.id, existingSR.id));
-
         return {
           success: true,
-          message: `Diagnosis SR-${ticketNumber} berhasil disinkronkan.`,
+          message: `Update SR-${ticketNumber} berhasil.`,
           totalBill:
             Number(dto.serviceFee ?? existingSR.serviceFee) + totalPartFee,
         };
@@ -319,7 +351,7 @@ export class ServiceRequestService {
   }
 
   /**
-   * 5. PROSES KASIR (Nota & Pembayaran)
+   * 7. PROSES KASIR
    */
   async prosesKasir(ticketNumber: string, dto: InputBiayaDto) {
     await this.db
@@ -329,12 +361,13 @@ export class ServiceRequestService {
         partFee: dto.partFee.toString(),
         statusSystem: 'CLOSED',
         pickUpDate: new Date(),
+        updatedAt: new Date(), // Pastikan muncul di log aktivitas
       })
       .where(eq(serviceRequests.ticketNumber, ticketNumber));
 
     return {
       success: true,
-      message: `Pembayaran tiket ${ticketNumber} berhasil diproses.`,
+      message: `Tiket ${ticketNumber} berhasil diproses.`,
     };
   }
 }

@@ -18,7 +18,7 @@ import { InputBiayaDto } from './dto/input-biaya.dto';
 export class ServiceRequestsController {
   constructor(private readonly srService: ServiceRequestService) {}
 
-  // 1. Dashboard Resepsionis
+  // 1. DASHBOARD UTAMA (TABEL & PAGINASI)
   @Get('dashboard')
   async getDashboard(
     @Query('search', new DefaultValuePipe('')) search: string,
@@ -28,38 +28,50 @@ export class ServiceRequestsController {
     return await this.srService.getAllDashboard(search, page, limit);
   }
 
+  // 2. STATISTIK COUNTER (PENTING: Harus di atas :ticketNumber)
+  // Endpoint: GET /service-request/stats
+  @Get('stats')
+  async getStats() {
+    return await this.srService.getDashboardStats();
+  }
+
+  // 3. LOG AKTIVITAS TERKINI
+  // Endpoint: GET /service-request/activities
+  @Get('activities')
+  async getActivities() {
+    return await this.srService.getLatestActivities();
+  }
+
+  // 4. DATA MASTER TEKNISI
   @Get('technicians')
   async getTechnicians() {
     return await this.srService.findAllTechnicians();
   }
 
-  // Parameter 'id' di sini idealnya diisi dengan Ticket Number (contoh: IDW5-123)
+  // 5. DETAIL TIKET (Diletakkan di bawah agar rute statis tidak ter-intercept)
   @Get(':ticketNumber')
   async getDetail(@Param('ticketNumber') ticketNumber: string) {
     return await this.srService.getDetailByTicketNumber(ticketNumber);
   }
 
-  // 2. Form Entry Baru / Resepsionis (POST)
+  // 6. ENTRY UNIT BARU
   @Post('entry')
   async create(@Body() createDto: CreateServiceRequestDto) {
     return await this.srService.createEntry(createDto, createDto.adminId);
   }
 
-  // 3. Update Teknisi & Input Sparepart (PATCH)
+  // 7. DIAGNOSA TEKNISI (PATCH)
   @Patch(':id/diagnosis')
   async updateTechnician(
-    @Param('id') id: string, // Gunakan Ticket Number
+    @Param('id') id: string, // Menggunakan Ticket Number
     @Body() updateTechDto: UpdateTechRequestDto
   ) {
     return await this.srService.updateTechDiagnosis(id, updateTechDto);
   }
 
-  // 4. Update Kasir / Biaya (PATCH)
+  // 8. PROSES KASIR (PATCH)
   @Patch(':id/kasir')
-  async jalankanKasir(
-    @Param('id') id: string, // Gunakan Ticket Number
-    @Body() dto: InputBiayaDto
-  ) {
+  async jalankanKasir(@Param('id') id: string, @Body() dto: InputBiayaDto) {
     return await this.srService.prosesKasir(id, dto);
   }
 }

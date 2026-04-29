@@ -8,17 +8,22 @@ const api = axios.create({
 
 export const srApi = {
   // 1. Ambil Semua Data Dashboard
-  // Pastikan tetap /service-request/dashboard (Tanpa S)
   getAll: (search = '', page = 1, limit = 10) =>
     api
       .get('/service-request/dashboard', { params: { search, page, limit } })
       .then((r) => r.data),
 
   // 2. Ambil Detail Per Unit
-  // FIX: Hapus 's' di service-requests agar cocok dengan @Controller('service-request')
   getOne: (id: string | number) =>
     api.get(`/service-request/${id}`).then((r) => r.data),
 
+  getDashboardStats: () =>
+    api.get('/service-request/stats').then((r) => r.data),
+
+  getActivities: () =>
+    api.get('/service-request/activities').then((r) => r.data),
+
+  // 3. Create Entry Baru
   create: async (rawData: any) => {
     const payload = {
       ...rawData,
@@ -28,17 +33,21 @@ export const srApi = {
     return response.data;
   },
 
-  // 4. Update Technician (Diagnosa)
+  // 4. Update Technician (Diagnosa & Hardware Check)
   updateTechnician: async (ticketNumber: string | number, rawData: any) => {
     const payload = {
       technicianFixId: Number(rawData.techId || rawData.technicianFixId),
       remarksHistory: rawData.remarks || rawData.remarksHistory,
-
       statusService: rawData.status || rawData.statusService,
+
+      // Pastikan hardwareCheck ikut terkirim jika ada
+      hardwareCheck: rawData.hardwareCheck || null,
+
       parts: (rawData.parts || []).map((p: any) => ({
         partName: p.partName,
         quantity: Number(p.quantity),
         unitPrice: String(p.unitPrice),
+        sparePartId: p.sparePartId || null,
       })),
     };
 
@@ -62,4 +71,4 @@ export const srApi = {
   },
 };
 
-export default api; // Export default api juga penting untuk penggunaan di file lain
+export default api;
