@@ -67,7 +67,7 @@ export class ServiceRequestService {
         techName: staff.name,
       })
       .from(serviceRequests)
-      .leftJoin(staff, eq(serviceRequests.technicianFixId, staff.id))
+      .leftJoin(staff, eq(serviceRequests.technicianCheckId, staff.id))
       .where(isNotNull(serviceRequests.updatedAt))
       .orderBy(desc(serviceRequests.updatedAt))
       .limit(5);
@@ -156,7 +156,7 @@ export class ServiceRequestService {
         partFee: serviceRequests.partFee,
         serviceFee: serviceRequests.serviceFee,
         incomingDate: serviceRequests.incomingDate,
-        technicianFixId: serviceRequests.technicianFixId,
+        technicianCheckId: serviceRequests.technicianCheckId,
         customerName: customers.name,
         customerAddress: customers.address,
         customerPhone: customerPhones.phone,
@@ -297,7 +297,7 @@ export class ServiceRequestService {
           .update(serviceRequests)
           .set({
             statusService: dto.statusService,
-            technicianFixId: dto.technicianFixId,
+            technicianCheckId: dto.technicianCheckId,
             remarksHistory: dto.remarksHistory,
             serviceFee: (dto.serviceFee ?? existingSR.serviceFee)?.toString(),
             checkDate: existingSR.checkDate ?? new Date(),

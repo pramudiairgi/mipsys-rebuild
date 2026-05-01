@@ -15,7 +15,7 @@ import { HardwareCheckDto } from './hardware-check.dto';
 export class UpdateTechRequestDto {
   @IsInt({ message: 'ID Teknisi harus berupa angka (int)' })
   @IsNotEmpty()
-  technicianFixId!: number;
+  technicianCheckId!: number;
 
   @IsString()
   @IsNotEmpty()

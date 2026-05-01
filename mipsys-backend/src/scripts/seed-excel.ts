@@ -302,7 +302,6 @@ async function runSeeder() {
         productId: productId,
         adminId: adminId,
         technicianCheckId: techCheckId,
-        technicianFixId: techFixId,
         problemDescription:
           row['PROBLEM']?.trim() || row['PROBLEM DESCRIPTION']?.trim(),
         statusService:
