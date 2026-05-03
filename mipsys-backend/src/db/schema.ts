@@ -112,7 +112,7 @@ export const spareParts = mysqlTable('spare_parts', {
   partName: varchar('part_name', { length: 255 }).notNull(),
   standard: varchar('standard', { length: 255 }),
   type: varchar('type', { length: 100 }),
-  stock: int('stock').default(0),
+  stock: int('stock').default(0).notNull(),
   price: decimal('price', { precision: 12, scale: 2 }).default('0.00'),
   note: text('note'),
   ipStatus: varchar('ip_status', { length: 50 }),

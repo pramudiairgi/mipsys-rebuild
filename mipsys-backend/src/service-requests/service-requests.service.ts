@@ -1,5 +1,21 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { eq, desc, like, or, SQL, isNotNull, count } from 'drizzle-orm';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import {
+  eq,
+  desc,
+  like,
+  or,
+  SQL,
+  isNotNull,
+  count,
+  sql,
+  InferInsertModel,
+} from 'drizzle-orm';
 import { MySql2Database } from 'drizzle-orm/mysql2';
 import * as schema from '../db/schema';
 import {
@@ -15,16 +31,19 @@ import {
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { InputBiayaDto } from './dto/input-biaya.dto';
 import { UpdateTechRequestDto } from './dto/update-tech-request.dto';
+import { PartItemDto } from './dto/part-item.dto';
+import { SparePartsService } from 'src/spare-parts/spare-parts.service';
+import { CreateSparePartDto } from 'src/spare-parts/dto/create-spare-part.dto';
 
 @Injectable()
 export class ServiceRequestService {
   constructor(
-    @Inject('DB_CONNECTION') private db: MySql2Database<typeof schema>
+    @Inject('DB_CONNECTION') private db: MySql2Database<typeof schema>,
+    private readonly sparePartsService: SparePartsService
   ) {}
 
   /**
-   * 1. DASHBOARD ANALYTICS (Real-time Stats)
-   * Menghitung jumlah tiket berdasarkan status untuk counter di atas dashboard
+   * 1. DASHBOARD
    */
   async getDashboardStats() {
     const stats = await this.db
@@ -279,11 +298,13 @@ export class ServiceRequestService {
    * 6. UPDATE OLEH TEKNISI (Refactored)
    */
   async updateTechDiagnosis(ticketNumber: string, dto: UpdateTechRequestDto) {
+    // 1. Validasi awal tiket
     const existingSR = await this.db.query.serviceRequests.findFirst({
       where: eq(serviceRequests.ticketNumber, ticketNumber),
     });
 
-    if (!existingSR) throw new Error(`Ticket ${ticketNumber} tidak ditemukan.`);
+    if (!existingSR)
+      throw new NotFoundException(`Tiket ${ticketNumber} tidak ditemukan.`);
 
     const totalPartFee = (dto.parts || []).reduce(
       (acc, p) => acc + Number(p.quantity) * Number(p.unitPrice),
@@ -292,7 +313,7 @@ export class ServiceRequestService {
 
     return await this.db.transaction(async (tx) => {
       try {
-        // --- PROSES UTAMA ---
+        // --- PROSES 1: Update tabel utama ---
         await tx
           .update(serviceRequests)
           .set({
@@ -300,52 +321,145 @@ export class ServiceRequestService {
             technicianCheckId: dto.technicianCheckId,
             remarksHistory: dto.remarksHistory,
             serviceFee: (dto.serviceFee ?? existingSR.serviceFee)?.toString(),
-            checkDate: existingSR.checkDate ?? new Date(),
-            readyDate:
-              dto.statusService === 'DONE' ? new Date() : existingSR.readyDate,
             partFee: totalPartFee.toString(),
             updatedAt: new Date(),
           })
           .where(eq(serviceRequests.id, existingSR.id));
 
-        // --- SYNC SPAREPARTS ---
+        // --- PROSES 2: Sinkronisasi Spareparts ---
         await tx
           .delete(orderParts)
           .where(eq(orderParts.serviceRequestId, existingSR.id));
+
         if (dto.parts && dto.parts.length > 0) {
-          const partsToInsert = dto.parts.map((p) => ({
-            serviceRequestId: existingSR.id,
-            sparePartId: p.sparePartId || null,
-            partName: p.partName,
-            quantity: p.quantity,
-            priceAtAction: p.unitPrice.toString(),
-          }));
-          await tx.insert(orderParts).values(partsToInsert);
+          const resolvedOrderParts: InferInsertModel<typeof orderParts>[] = [];
+
+          for (const p of dto.parts) {
+            let targetId: number;
+
+            if (p.sparePartId) {
+              const [item] = await tx
+                .select()
+                .from(spareParts)
+                .where(eq(spareParts.id, p.sparePartId));
+
+              if (!item)
+                throw new BadRequestException(
+                  `ID Part ${p.sparePartId} tidak ditemukan.`
+                );
+              if (item.stock < p.quantity)
+                throw new BadRequestException(
+                  `Stok '${p.partName}' tidak cukup.`
+                );
+
+              await tx
+                .update(spareParts)
+                .set({
+                  stock: sql`${spareParts.stock} - ${p.quantity}`,
+                  price: p.unitPrice.toString(),
+                })
+                .where(eq(spareParts.id, p.sparePartId));
+
+              targetId = p.sparePartId;
+            } else {
+              if (!p.partCode || !p.modelName) {
+                throw new BadRequestException(
+                  `Part baru '${p.partName}' wajib mengisi Kode dan Model.`
+                );
+              }
+
+              const existingPart = await tx.query.spareParts.findFirst({
+                where: eq(spareParts.partCode, p.partCode),
+              });
+
+              if (existingPart) {
+                targetId = existingPart.id;
+
+                await tx
+                  .update(spareParts)
+                  .set({ price: p.unitPrice.toString() })
+                  .where(eq(spareParts.id, existingPart.id));
+              } else {
+                const [newPart] = await tx
+                  .insert(spareParts)
+                  .values({
+                    partCode: p.partCode,
+                    partName: p.partName,
+                    modelName: p.modelName,
+                    block: p.block || null,
+                    refNo: p.refNo || null,
+                    price: p.unitPrice.toString(),
+                    stock: 0,
+                    ipStatus: p.ipStatus || 'Non IP',
+                    note: `Input manual via ${ticketNumber}`,
+                  })
+                  .$returningId();
+
+                targetId = newPart.id;
+              }
+            }
+
+            resolvedOrderParts.push({
+              serviceRequestId: existingSR.id,
+              sparePartId: targetId,
+              partName: p.partName,
+              quantity: p.quantity,
+              priceAtAction: p.unitPrice.toString(),
+            });
+          }
+
+          // Simpan semua riwayat pemakaian ke order_parts
+          await tx.insert(orderParts).values(resolvedOrderParts);
         }
 
-        // --- SYNC HARDWARE CHECK ---
+        // --- PROSES 3: Hardware Check ---
         if (dto.hardwareCheck) {
           await tx
             .delete(hardwareChecks)
             .where(eq(hardwareChecks.serviceRequestId, existingSR.id));
           await tx.insert(hardwareChecks).values({
             serviceRequestId: existingSR.id,
-            phStatus: dto.hardwareCheck.phStatus,
-            mbStatus: dto.hardwareCheck.mbStatus,
-            psStatus: dto.hardwareCheck.psStatus,
-            othersStatus: dto.hardwareCheck.othersStatus || '',
+            ...dto.hardwareCheck,
           });
         }
 
         return {
           success: true,
-          message: `Update SR-${ticketNumber} berhasil.`,
           totalBill:
             Number(dto.serviceFee ?? existingSR.serviceFee) + totalPartFee,
         };
-      } catch (error) {
-        console.error('Transaction Error:', error);
-        throw error;
+      } catch (error: any) {
+        if (error instanceof BadRequestException) throw error;
+        console.error(`[Error SR-${ticketNumber}]:`, error);
+        throw new InternalServerErrorException(
+          'Gagal memproses diagnosis teknisi.'
+        );
+      }
+    });
+  }
+
+  async addPartsToRequest(serviceRequestId: number, parts: PartItemDto[]) {
+    // Gunakan transaksi database agar data konsisten
+    return await this.db.transaction(async (tx) => {
+      for (const part of parts) {
+        // 1. Logika Pengurangan Stok (Jika ada sparePartId)
+        if (part.sparePartId) {
+          // Kita panggil fungsi sakti yang sudah kita buat sebelumnya
+          await this.sparePartsService.reduceStock(
+            part.sparePartId,
+            part.quantity
+          );
+        }
+
+        // 2. Logika Pencatatan Penggunaan Barang (Transaction Table)
+        await tx.insert(schema.orderParts).values({
+          serviceRequestId,
+          sparePartId: part.sparePartId,
+          partName: part.partName,
+          quantity: part.quantity,
+          priceAtAction: part.unitPrice,
+          status: part.sparePartId ? 'IN_STOCK' : 'MANUAL_NEW',
+        });
       }
     });
   }

@@ -39,15 +39,21 @@ export const srApi = {
       technicianCheckId: Number(rawData.techId || rawData.technicianCheckId),
       remarksHistory: rawData.remarks || rawData.remarksHistory,
       statusService: rawData.status || rawData.statusService,
+      serviceFee: Number(rawData.serviceFee || 0),
 
-      // Pastikan hardwareCheck ikut terkirim jika ada
+      // Sync Hardware Check
       hardwareCheck: rawData.hardwareCheck || null,
 
+      // Mapping Spareparts untuk mendukung Auto-Registration
       parts: (rawData.parts || []).map((p: any) => ({
+        sparePartId: p.sparePartId || null, // Jika null, backend akan mendaftarkan baru
         partName: p.partName,
         quantity: Number(p.quantity),
         unitPrice: String(p.unitPrice),
-        sparePartId: p.sparePartId || null,
+        partCode: p.partCode || null,
+        modelName: p.modelName || null,
+        block: p.block || null,
+        ipStatus: p.ipStatus || 'Non IP',
       })),
     };
 

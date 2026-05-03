@@ -1,9 +1,13 @@
 export interface OrderPart {
   id?: number;
-  sparePartId?: number;
+  sparePartId?: number | null;
   partName: string;
   quantity: number;
-  unitPrice: number;
+  unitPrice: string;
+  partCode?: string;
+  modelName?: string;
+  block?: string;
+  ipStatus?: 'IP' | 'Non IP';
 }
 
 export interface ServiceRequest {
@@ -25,8 +29,8 @@ export interface ServiceRequest {
   statusSystem: 'OPEN' | 'CLOSED';
   problemDescription: string;
   remarksHistory: string;
-  partFee: string;
-  serviceFee: string;
+  partFee: number;
+  serviceFee: number;
   technicianCheckId: number | null;
   orderParts?: any[];
   parts?: OrderPart[];
