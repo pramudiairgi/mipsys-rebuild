@@ -810,7 +810,6 @@ const ServiceRequestDetail = () => {
           }}
           initialServiceFee={data?.serviceFee}
           initialPartFee={data?.partFee}
-          initialShippingFee={data?.shippingFee}
         />
       )}
 
