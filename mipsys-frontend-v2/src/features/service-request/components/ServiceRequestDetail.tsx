@@ -18,7 +18,10 @@ import {
   DoorClosed,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useServiceRequest, type ServiceRequestDetail } from '../hooks/useServiceRequest';
+import {
+  useServiceRequest,
+  type ServiceRequestDetail,
+} from '../hooks/useServiceRequest';
 import { useAuth } from '@/src/lib/auth-context';
 import { DiagnosisModal } from '@/src/components/layout/DiagnosisModal';
 import { ApproveQuoteModal } from '@/src/components/layout/ApproveQuoteModal';
@@ -34,7 +37,13 @@ import { RepairTimeline } from './RepairTimeline';
 import { PartsUsedList } from './PartsUsedList';
 import { useOrderParts } from '../hooks/useOrderParts';
 
-const statusToBadge: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+const statusToBadge: Record<
+  string,
+  {
+    label: string;
+    variant: 'default' | 'secondary' | 'outline' | 'destructive';
+  }
+> = {
   WAITING_CHECK: { label: 'Pending', variant: 'secondary' },
   CHECK: { label: 'Check', variant: 'secondary' },
   WAITING_APPROVE: { label: 'Menunggu Approve', variant: 'outline' },
@@ -65,7 +74,10 @@ type DetailState = {
 };
 
 type DetailAction =
-  | { type: 'TOGGLE_EDIT'; payload: { editing: boolean; original?: ServiceRequestDetail | null } }
+  | {
+      type: 'TOGGLE_EDIT';
+      payload: { editing: boolean; original?: ServiceRequestDetail | null };
+    }
   | { type: 'SET_HAS_INVOICE'; payload: boolean }
   | { type: 'SET_ORIGINAL'; payload: ServiceRequestDetail | null }
   | { type: 'showDiagnosis'; payload: boolean }
@@ -85,7 +97,11 @@ type DetailAction =
 function detailReducer(state: DetailState, action: DetailAction): DetailState {
   switch (action.type) {
     case 'TOGGLE_EDIT':
-      return { ...state, isEditing: action.payload.editing, originalData: action.payload.original ?? state.originalData };
+      return {
+        ...state,
+        isEditing: action.payload.editing,
+        originalData: action.payload.original ?? state.originalData,
+      };
     case 'SET_HAS_INVOICE':
       return { ...state, hasInvoice: action.payload };
     case 'SET_ORIGINAL':
@@ -120,12 +136,17 @@ const ServiceRequestDetail = () => {
   const { data, setData, isLoading, refetch } = useServiceRequest(ticketNumber);
   const { user } = useAuth();
   const [state, dispatch] = useReducer(detailReducer, INITIAL_STATE);
-  const { parts, totalFee, isLoading: partsLoading } = useOrderParts(data?.id ?? null);
+  const {
+    parts,
+    totalFee,
+    isLoading: partsLoading,
+  } = useOrderParts(data?.id ?? null);
 
   const hasUnsavedChanges = state.isEditing;
 
   useEffect(() => {
-    if (data) dispatch({ type: 'SET_HAS_INVOICE', payload: data.hasInvoice ?? false });
+    if (data)
+      dispatch({ type: 'SET_HAS_INVOICE', payload: data.hasInvoice ?? false });
   }, [data]);
 
   useEffect(() => {
@@ -139,7 +160,10 @@ const ServiceRequestDetail = () => {
     return () => window.removeEventListener('beforeunload', handler);
   }, [hasUnsavedChanges]);
 
-  const hasSavedQuote = data && (parseFloat(data.serviceFee || '0') > 0 || parseFloat(data.partFee || '0') > 0);
+  const hasSavedQuote =
+    data &&
+    (parseFloat(data.serviceFee || '0') > 0 ||
+      parseFloat(data.partFee || '0') > 0);
 
   const handleEditToggle = () => {
     if (!state.isEditing) {
@@ -150,9 +174,12 @@ const ServiceRequestDetail = () => {
     dispatch({ type: 'TOGGLE_EDIT', payload: { editing: !state.isEditing } });
   };
 
-  const handleFieldChange = useCallback((field: string, value: string) => {
-    setData((prev) => prev ? { ...prev, [field]: value } : prev);
-  }, [setData]);
+  const handleFieldChange = useCallback(
+    (field: string, value: string) => {
+      setData((prev) => (prev ? { ...prev, [field]: value } : prev));
+    },
+    [setData],
+  );
 
   async function handleSaveChanges() {
     if (!ticketNumber || !data) return;
@@ -169,7 +196,8 @@ const ServiceRequestDetail = () => {
       toast.success('Perubahan berhasil disimpan');
       dispatch({ type: 'TOGGLE_EDIT', payload: { editing: false } });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gagal menyimpan perubahan';
+      const message =
+        error instanceof Error ? error.message : 'Gagal menyimpan perubahan';
       toast.error(message);
     } finally {
       dispatch({ type: 'isSaving', payload: false });
@@ -180,16 +208,23 @@ const ServiceRequestDetail = () => {
     if (!ticketNumber) return;
     dispatch({ type: 'isApproving', payload: true });
     try {
-      const result = await srApi.approveQuote(ticketNumber, { performedBy: user?.staffId });
+      const result = await srApi.approveQuote(ticketNumber, {
+        performedBy: user?.staffId,
+      });
 
       if (result.allInStock) {
-        toast.success(`Penawaran disetujui. Status → SERVICE. ${result.partsProcessed} part dipotong dari stok.`);
+        toast.success(
+          `Penawaran disetujui. Status → SERVICE. ${result.partsProcessed} part dipotong dari stok.`,
+        );
       } else {
-        toast.success('Penawaran disetujui. Beberapa part tidak tersedia. Status → AWAITING_PARTS.');
+        toast.success(
+          'Penawaran disetujui. Beberapa part tidak tersedia. Status → AWAITING_PARTS.',
+        );
       }
       await refetch();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gagal menyetujui penawaran';
+      const message =
+        error instanceof Error ? error.message : 'Gagal menyetujui penawaran';
       toast.error(message);
     } finally {
       dispatch({ type: 'isApproving', payload: false });
@@ -205,7 +240,8 @@ const ServiceRequestDetail = () => {
       toast.success('Tiket dibatalkan.');
       await refetch();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gagal membatalkan tiket';
+      const message =
+        error instanceof Error ? error.message : 'Gagal membatalkan tiket';
       toast.error(message);
     } finally {
       dispatch({ type: 'isCancelling', payload: false });
@@ -221,7 +257,8 @@ const ServiceRequestDetail = () => {
       toast.success('Tiket ditutup.');
       await refetch();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gagal menutup tiket';
+      const message =
+        error instanceof Error ? error.message : 'Gagal menutup tiket';
       toast.error(message);
     } finally {
       dispatch({ type: 'isClosing', payload: false });
@@ -233,16 +270,21 @@ const ServiceRequestDetail = () => {
     if (!ticketNumber) return;
     dispatch({ type: 'isRetryingStock', payload: true });
     try {
-      const result = await srApi.retryAwaitingParts(ticketNumber, { performedBy: user?.staffId });
+      const result = await srApi.retryAwaitingParts(ticketNumber, {
+        performedBy: user?.staffId,
+      });
 
       if (result.available) {
-        toast.success(`Stok tersedia! ${result.partsProcessed} part dipotong. Status → SERVICE`);
+        toast.success(
+          `Stok tersedia! ${result.partsProcessed} part dipotong. Status → SERVICE`,
+        );
       } else {
         toast.error('Stok masih belum mencukupi. PO perlu dilanjutkan.');
       }
       await refetch();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gagal cek ulang stok';
+      const message =
+        error instanceof Error ? error.message : 'Gagal cek ulang stok';
       toast.error(message);
     } finally {
       dispatch({ type: 'isRetryingStock', payload: false });
@@ -264,18 +306,22 @@ const ServiceRequestDetail = () => {
         toast.success(
           <div className="flex items-center gap-2">
             <span>Invoice berhasil dibuat: </span>
-            <Link href={`/finance?search=${res.invoice.invoiceNumber}`} className="underline font-bold">
+            <Link
+              href={`/finance?search=${res.invoice.invoiceNumber}`}
+              className="underline font-bold"
+            >
               {res.invoice.invoiceNumber}
             </Link>
           </div>,
-          { duration: 5000 }
+          { duration: 5000 },
         );
       } else if (res.invoiceWarning) {
         toast.error(res.invoiceWarning, { duration: 8000 });
       }
       await refetch();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gagal menyelesaikan service';
+      const message =
+        error instanceof Error ? error.message : 'Gagal menyelesaikan service';
       toast.error(message);
     } finally {
       dispatch({ type: 'isDoneProcessing', payload: false });
@@ -290,16 +336,20 @@ const ServiceRequestDetail = () => {
       toast.success(
         <div className="flex items-center gap-2">
           <span>Invoice berhasil dibuat: </span>
-          <Link href={`/finance?search=${result.invoiceNumber}`} className="underline font-bold">
+          <Link
+            href={`/finance?search=${result.invoiceNumber}`}
+            className="underline font-bold"
+          >
             {result.invoiceNumber}
           </Link>
         </div>,
-        { duration: 5000 }
+        { duration: 5000 },
       );
       dispatch({ type: 'SET_HAS_INVOICE', payload: true });
       await refetch();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gagal membuat invoice';
+      const message =
+        error instanceof Error ? error.message : 'Gagal membuat invoice';
       toast.error(message);
     } finally {
       dispatch({ type: 'isCreatingInvoice', payload: false });
@@ -308,7 +358,10 @@ const ServiceRequestDetail = () => {
 
   if (isLoading || !data) return <LoadingState />;
 
-  const badgeCfg = statusToBadge[data.statusService] || { label: data.statusService, variant: 'secondary' as const };
+  const badgeCfg = statusToBadge[data.statusService] || {
+    label: data.statusService,
+    variant: 'secondary' as const,
+  };
 
   return (
     <main className="min-h-screen planner-bg text-[var(--foreground)] font-sans selection:bg-[var(--primary)]/20">
@@ -325,7 +378,10 @@ const ServiceRequestDetail = () => {
               <h1 className="text-xl md:text-2xl font-black text-[var(--foreground)] tracking-tighter leading-none">
                 {ticketNumber}
               </h1>
-              <Badge variant="outline" className="bg-[var(--primary)]/15 text-[var(--primary)] border-[var(--primary)]/30 text-[10px] px-2.5 py-0.5">
+              <Badge
+                variant="outline"
+                className="bg-[var(--primary)]/15 text-[var(--primary)] border-[var(--primary)]/30 text-[10px] px-2.5 py-0.5"
+              >
                 {data.serviceType || 'NON_WARRANTY'}
               </Badge>
               <span className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-widest">
@@ -340,7 +396,11 @@ const ServiceRequestDetail = () => {
             onClick={handleEditToggle}
             className="gap-2 px-6 h-11 rounded-xl text-[10px] font-black tracking-widest shrink-0"
           >
-            {state.isEditing ? <X size={14} aria-hidden="true" /> : <Edit3 size={14} aria-hidden="true" />}
+            {state.isEditing ? (
+              <X size={14} aria-hidden="true" />
+            ) : (
+              <Edit3 size={14} aria-hidden="true" />
+            )}
             {state.isEditing ? 'CANCEL' : 'EDIT TICKET'}
           </Button>
         </header>
@@ -388,11 +448,20 @@ const ServiceRequestDetail = () => {
                 <CardContent className="space-y-4 !p-0">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] shrink-0">
-                      <ShieldCheck size={24} strokeWidth={2} aria-hidden="true" />
+                      <ShieldCheck
+                        size={24}
+                        strokeWidth={2}
+                        aria-hidden="true"
+                      />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-widest mb-0.5">Status</p>
-                      <Badge variant={badgeCfg.variant} className="text-sm font-black uppercase tracking-tighter italic px-3 py-1 h-auto">
+                      <p className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-widest mb-0.5">
+                        Status
+                      </p>
+                      <Badge
+                        variant={badgeCfg.variant}
+                        className="text-sm font-black uppercase tracking-tighter italic px-3 py-1 h-auto"
+                      >
                         {badgeCfg.label}
                       </Badge>
                     </div>
@@ -402,18 +471,23 @@ const ServiceRequestDetail = () => {
                 <div className="border-t border-border/10 !mx-0 my-4" />
 
                 <CardContent className="space-y-3 !p-0">
-                  {(data.statusService === 'WAITING_CHECK' || data.statusService === 'CHECK') && (
+                  {(data.statusService === 'WAITING_CHECK' ||
+                    data.statusService === 'CHECK') && (
                     <>
                       <Button
                         className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
-                        onClick={() => dispatch({ type: 'showDiagnosis', payload: true })}
+                        onClick={() =>
+                          dispatch({ type: 'showDiagnosis', payload: true })
+                        }
                       >
                         DIAGNOSA & UPDATE STATUS
                       </Button>
                       <Button
                         variant="destructive"
                         className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2"
-                        onClick={() => dispatch({ type: 'showCancelConfirm', payload: true })}
+                        onClick={() =>
+                          dispatch({ type: 'showCancelConfirm', payload: true })
+                        }
                       >
                         <Ban size={14} aria-hidden="true" /> BATALKAN
                       </Button>
@@ -424,46 +498,85 @@ const ServiceRequestDetail = () => {
                     <>
                       <Button
                         className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
-                        onClick={() => dispatch({ type: 'showDiagnosis', payload: true })}
+                        onClick={() =>
+                          dispatch({ type: 'showDiagnosis', payload: true })
+                        }
                       >
                         DIAGNOSA
                       </Button>
 
                       {!hasSavedQuote ? (
-                          <Button
-                            variant="default"
-                            className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
-                            onClick={() => dispatch({ type: 'showQuote', payload: true })}
-                          >
-                            <FileText size={14} aria-hidden="true" /> BUAT PENAWARAN
-                          </Button>
+                        <Button
+                          variant="default"
+                          className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
+                          onClick={() =>
+                            dispatch({ type: 'showQuote', payload: true })
+                          }
+                        >
+                          <FileText size={14} aria-hidden="true" /> BUAT
+                          PENAWARAN
+                        </Button>
                       ) : (
                         <>
                           <div className="p-2.5 rounded-xl bg-[var(--primary)]/10 border-2 border-[var(--primary)]/30">
-                            <p className="text-[10px] font-black text-[var(--primary)] text-center">Penawaran sudah dibuat</p>
+                            <p className="text-[10px] font-black text-[var(--primary)] text-center">
+                              Penawaran sudah dibuat
+                            </p>
                           </div>
                           <Button
                             variant="outline"
                             className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 border-[var(--primary)]/50 text-[var(--primary)] hover:bg-[var(--primary)]/10"
-                            onClick={() => dispatch({ type: 'showPrintQuote', payload: true })}
+                            onClick={() =>
+                              dispatch({
+                                type: 'showPrintQuote',
+                                payload: true,
+                              })
+                            }
                           >
-                            <FileText size={14} aria-hidden="true" /> CETAK PENAWARAN
+                            <FileText size={14} aria-hidden="true" /> CETAK
+                            PENAWARAN
                           </Button>
                           <Button
                             className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
-                            onClick={() => dispatch({ type: 'showApproveConfirm', payload: true })}
+                            onClick={() =>
+                              dispatch({
+                                type: 'showApproveConfirm',
+                                payload: true,
+                              })
+                            }
                             disabled={state.isApproving}
                           >
-                            {state.isApproving ? <Loader2 className="motion-safe:animate-spin" size={14} aria-hidden="true" /> : <CheckCircle2 size={14} aria-hidden="true" />}
+                            {state.isApproving ? (
+                              <Loader2
+                                className="motion-safe:animate-spin"
+                                size={14}
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <CheckCircle2 size={14} aria-hidden="true" />
+                            )}
                             SETUJUI
                           </Button>
                           <Button
                             variant="destructive"
                             className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2"
-                            onClick={() => dispatch({ type: 'showCancelConfirm', payload: true })}
+                            onClick={() =>
+                              dispatch({
+                                type: 'showCancelConfirm',
+                                payload: true,
+                              })
+                            }
                             disabled={state.isCancelling}
                           >
-                            {state.isCancelling ? <Loader2 className="motion-safe:animate-spin" size={14} aria-hidden="true" /> : <Ban size={14} aria-hidden="true" />}
+                            {state.isCancelling ? (
+                              <Loader2
+                                className="motion-safe:animate-spin"
+                                size={14}
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <Ban size={14} aria-hidden="true" />
+                            )}
                             BATALKAN
                           </Button>
                         </>
@@ -477,7 +590,15 @@ const ServiceRequestDetail = () => {
                       onClick={handleMarkDone}
                       disabled={state.isDoneProcessing}
                     >
-                      {state.isDoneProcessing ? <Loader2 className="motion-safe:animate-spin" size={14} aria-hidden="true" /> : <CheckCircle2 size={14} aria-hidden="true" />}
+                      {state.isDoneProcessing ? (
+                        <Loader2
+                          className="motion-safe:animate-spin"
+                          size={14}
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <CheckCircle2 size={14} aria-hidden="true" />
+                      )}
                       SELESAIKAN
                     </Button>
                   )}
@@ -485,14 +606,24 @@ const ServiceRequestDetail = () => {
                   {data.statusService === 'AWAITING_PARTS' && (
                     <div className="space-y-3">
                       <div className="p-3 rounded-xl bg-amber-500/10 border-2 border-amber-500/30 text-center">
-                        <p className="text-[10px] font-bold text-amber-400">Menunggu Part — PO sedang diproses</p>
+                        <p className="text-[10px] font-bold text-amber-400">
+                          Menunggu Part — PO sedang diproses
+                        </p>
                       </div>
                       <Button
                         className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
                         onClick={handleRetryStock}
                         disabled={state.isRetryingStock}
                       >
-                        {state.isRetryingStock ? <Loader2 className="motion-safe:animate-spin" size={14} aria-hidden="true" /> : <RefreshCw size={14} aria-hidden="true" />}
+                        {state.isRetryingStock ? (
+                          <Loader2
+                            className="motion-safe:animate-spin"
+                            size={14}
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <RefreshCw size={14} aria-hidden="true" />
+                        )}
                         CEK ULANG STOK
                       </Button>
                     </div>
@@ -504,7 +635,15 @@ const ServiceRequestDetail = () => {
                       onClick={handleCreateInvoice}
                       disabled={state.isCreatingInvoice}
                     >
-                      {state.isCreatingInvoice ? <Loader2 className="motion-safe:animate-spin" size={14} aria-hidden="true" /> : <FileDown size={14} aria-hidden="true" />}
+                      {state.isCreatingInvoice ? (
+                        <Loader2
+                          className="motion-safe:animate-spin"
+                          size={14}
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <FileDown size={14} aria-hidden="true" />
+                      )}
                       BUAT INVOICE
                     </Button>
                   )}
@@ -517,13 +656,24 @@ const ServiceRequestDetail = () => {
                     </Link>
                   )}
 
-                  {(data.statusService === 'DONE' || data.statusService === 'CANCEL') && (
+                  {(data.statusService === 'DONE' ||
+                    data.statusService === 'CANCEL') && (
                     <Button
                       className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
-                      onClick={() => dispatch({ type: 'showCloseConfirm', payload: true })}
+                      onClick={() =>
+                        dispatch({ type: 'showCloseConfirm', payload: true })
+                      }
                       disabled={state.isClosing}
                     >
-                      {state.isClosing ? <Loader2 className="motion-safe:animate-spin" size={14} aria-hidden="true" /> : <DoorClosed size={14} aria-hidden="true" />}
+                      {state.isClosing ? (
+                        <Loader2
+                          className="motion-safe:animate-spin"
+                          size={14}
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <DoorClosed size={14} aria-hidden="true" />
+                      )}
                       TUTUP TIKET
                     </Button>
                   )}
@@ -532,30 +682,43 @@ const ServiceRequestDetail = () => {
                 <div className="border-t border-border/10 !mx-0 my-4" />
 
                 <CardContent className="!p-0 space-y-3">
-                  <p className="micro-label text-[var(--muted-foreground)]">💰 Fee Summary</p>
+                  <p className="micro-label text-[var(--muted-foreground)]">
+                    💰 Fee Summary
+                  </p>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center py-1.5">
-                      <span className="text-xs text-[var(--muted-foreground)]">Service Fee</span>
+                      <span className="text-xs text-[var(--muted-foreground)]">
+                        Service Fee
+                      </span>
                       <span className="text-sm font-bold text-[var(--foreground)]">
-                        Rp {parseFloat(data.serviceFee || '0').toLocaleString('id-ID')}
+                        Rp{' '}
+                        {parseFloat(data.serviceFee || '0').toLocaleString(
+                          'id-ID',
+                        )}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-1.5">
-                      <span className="text-xs text-[var(--muted-foreground)]">Parts Fee</span>
-                      <span className="text-sm font-bold text-[var(--foreground)]">
-                        Rp {parseFloat(data.partFee || '0').toLocaleString('id-ID')}
+                      <span className="text-xs text-[var(--muted-foreground)]">
+                        Parts Fee
                       </span>
-                    </div>
-                    <div className="flex justify-between items-center py-1.5">
-                      <span className="text-xs text-[var(--muted-foreground)]">Shipping</span>
                       <span className="text-sm font-bold text-[var(--foreground)]">
-                        Rp {parseFloat(data.shippingFee || '0').toLocaleString('id-ID')}
+                        Rp{' '}
+                        {parseFloat(data.partFee || '0').toLocaleString(
+                          'id-ID',
+                        )}
                       </span>
                     </div>
                     <div className="border-t border-border/10 pt-2 flex justify-between items-center">
-                      <span className="text-xs font-bold text-[var(--primary)]">Total</span>
+                      <span className="text-xs font-bold text-[var(--primary)]">
+                        Total
+                      </span>
                       <span className="text-base font-black text-[var(--primary)]">
-                        Rp {(parseFloat(data.serviceFee || '0') + parseFloat(data.partFee || '0') + parseFloat(data.shippingFee || '0')).toLocaleString('id-ID')}
+                        Rp{' '}
+                        {(
+                          parseFloat(data.serviceFee || '0') +
+                          parseFloat(data.partFee || '0') +
+                          parseFloat(data.shippingFee || '0')
+                        ).toLocaleString('id-ID')}
                       </span>
                     </div>
                   </div>
@@ -564,15 +727,25 @@ const ServiceRequestDetail = () => {
                 <div className="border-t border-border/10 !mx-0 my-4" />
 
                 <CardContent className="!p-0 space-y-3">
-                  <p className="micro-label text-[var(--muted-foreground)]">📋 Unit Specification</p>
+                  <p className="micro-label text-[var(--muted-foreground)]">
+                    📋 Unit Specification
+                  </p>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center py-1.5 border-b border-border/10">
-                      <span className="text-xs text-[var(--muted-foreground)]">Model</span>
-                      <span className="text-sm font-bold text-[var(--foreground)]">{data.modelName || '-'}</span>
+                      <span className="text-xs text-[var(--muted-foreground)]">
+                        Model
+                      </span>
+                      <span className="text-sm font-bold text-[var(--foreground)]">
+                        {data.modelName || '-'}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center py-1.5">
-                      <span className="text-xs text-[var(--muted-foreground)]">S/N</span>
-                      <span className="text-sm font-bold text-[var(--foreground)]">{data.serialNumber || '-'}</span>
+                      <span className="text-xs text-[var(--muted-foreground)]">
+                        S/N
+                      </span>
+                      <span className="text-sm font-bold text-[var(--foreground)]">
+                        {data.serialNumber || '-'}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
@@ -592,7 +765,9 @@ const ServiceRequestDetail = () => {
 
               <div className="flex items-center gap-2 text-[var(--muted-foreground)] px-2">
                 <Activity size={12} aria-hidden="true" />
-                <p className="text-[8px] font-bold uppercase tracking-luxury">MIPSYS Enterprise AAA Standard</p>
+                <p className="text-[8px] font-bold uppercase tracking-luxury">
+                  MIPSYS Enterprise AAA Standard
+                </p>
               </div>
             </aside>
           </div>
@@ -605,7 +780,9 @@ const ServiceRequestDetail = () => {
           serviceRequestId={data?.id ?? null}
           isOpen={state.showDiagnosis}
           onClose={() => dispatch({ type: 'showDiagnosis', payload: false })}
-          onSuccess={() => { refetch(); }}
+          onSuccess={() => {
+            refetch();
+          }}
           currentStatus={data?.statusService}
         />
       )}
@@ -616,7 +793,9 @@ const ServiceRequestDetail = () => {
           serviceRequestId={data?.id ?? null}
           isOpen={state.showQuote}
           onClose={() => dispatch({ type: 'showQuote', payload: false })}
-          onSuccess={() => { refetch(); }}
+          onSuccess={() => {
+            refetch();
+          }}
         />
       )}
 
@@ -626,7 +805,9 @@ const ServiceRequestDetail = () => {
           serviceRequestId={data?.id ?? null}
           isOpen={state.showPrintQuote}
           onClose={() => dispatch({ type: 'showPrintQuote', payload: false })}
-          onSuccess={() => { refetch(); }}
+          onSuccess={() => {
+            refetch();
+          }}
           initialServiceFee={data?.serviceFee}
           initialPartFee={data?.partFee}
           initialShippingFee={data?.shippingFee}
@@ -635,7 +816,9 @@ const ServiceRequestDetail = () => {
 
       <ConfirmDialog
         open={state.showApproveConfirm}
-        onOpenChange={(v) => dispatch({ type: 'showApproveConfirm', payload: v })}
+        onOpenChange={(v) =>
+          dispatch({ type: 'showApproveConfirm', payload: v })
+        }
         title="Setujui Penawaran?"
         description="Yakin ingin menyetujui penawaran ini? Status tiket akan berubah menjadi SERVICE atau AWAITING_PARTS."
         confirmLabel="Ya, Setujui"
@@ -655,7 +838,9 @@ const ServiceRequestDetail = () => {
       />
       <ConfirmDialog
         open={state.showCancelConfirm}
-        onOpenChange={(v) => dispatch({ type: 'showCancelConfirm', payload: v })}
+        onOpenChange={(v) =>
+          dispatch({ type: 'showCancelConfirm', payload: v })
+        }
         title="Batalkan Tiket?"
         description="Yakin ingin membatalkan tiket ini? Semua part yang diusulkan akan dibatalkan."
         confirmLabel="Ya, Batalkan"
@@ -669,8 +854,15 @@ const ServiceRequestDetail = () => {
 
 const LoadingState = () => (
   <div className="min-h-screen planner-bg flex flex-col items-center justify-center gap-6 text-[var(--primary-foreground)]">
-    <Loader2 className="motion-safe:animate-spin" size={40} strokeWidth={1} aria-hidden="true" />
-    <p className="text-[10px] font-black uppercase tracking-[0.6em]">Synchronizing…</p>
+    <Loader2
+      className="motion-safe:animate-spin"
+      size={40}
+      strokeWidth={1}
+      aria-hidden="true"
+    />
+    <p className="text-[10px] font-black uppercase tracking-[0.6em]">
+      Synchronizing…
+    </p>
   </div>
 );
 

@@ -6,14 +6,14 @@
   "instructions": [
     "AGENTS.md",
     ".opencode/instructions/INSTRUCTIONS.md",
-    ".opencode/skills/tdd-workflow/SKILL.md",
-    ".opencode/skills/security-review/SKILL.md",
-    ".opencode/skills/coding-standards/SKILL.md",
-    ".opencode/skills/frontend-patterns/SKILL.md",
-    ".opencode/skills/backend-patterns/SKILL.md",
-    ".opencode/skills/e2e-testing/SKILL.md",
-    ".opencode/skills/verification-loop/SKILL.md",
-    ".opencode/skills/api-design/SKILL.md",
+    "~/.agents/skills/tdd-workflow/SKILL.md",
+    "~/.agents/skills/security-review/SKILL.md",
+    "~/.agents/skills/coding-standards/SKILL.md",
+    "~/.agents/skills/frontend-patterns/SKILL.md",
+    "~/.agents/skills/backend-patterns/SKILL.md",
+    "~/.agents/skills/e2e-testing/SKILL.md",
+    "~/.agents/skills/verification-loop/SKILL.md",
+    "~/.agents/skills/api-design/SKILL.md",
     "~/.agents/skills/caveman-review/SKILL.md"
   ],
   "plugin": [
