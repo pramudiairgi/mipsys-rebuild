@@ -716,8 +716,7 @@ const ServiceRequestDetail = () => {
                         Rp{' '}
                         {(
                           parseFloat(data.serviceFee || '0') +
-                          parseFloat(data.partFee || '0') +
-                          parseFloat(data.shippingFee || '0')
+                          parseFloat(data.partFee || '0')
                         ).toLocaleString('id-ID')}
                       </span>
                     </div>

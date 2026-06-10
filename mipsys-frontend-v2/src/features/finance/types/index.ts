@@ -5,7 +5,6 @@ export interface Invoice {
   clientName: string;
   serviceFee: string;
   partFee: string;
-  shippingFee: string;
   ppn: string;
   ppnRate: string;
   total: string;
@@ -70,5 +69,10 @@ export interface PpnReport {
 }
 
 export interface DashboardData {
-  monthly: Array<{ label: string; revenue: number; expense: number; profit: number }>;
+  monthly: Array<{
+    label: string;
+    revenue: number;
+    expense: number;
+    profit: number;
+  }>;
 }

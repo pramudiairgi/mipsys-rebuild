@@ -1,4 +1,14 @@
-import { pgTable, varchar, numeric, integer, timestamp, date, text, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  varchar,
+  numeric,
+  integer,
+  timestamp,
+  date,
+  text,
+  index,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { serviceRequests } from './service-request.schema';
 import { invoiceStatusEnum, paymentMethodEnum } from './enums';
@@ -7,13 +17,18 @@ export const invoices = pgTable(
   'invoices',
   {
     id: integer('id').generatedAlwaysAsIdentity().primaryKey(),
-    invoiceNumber: varchar('invoice_number', { length: 100 }).unique().notNull(),
+    invoiceNumber: varchar('invoice_number', { length: 100 })
+      .unique()
+      .notNull(),
     ticketNumber: varchar('ticket_number', { length: 100 }).notNull(),
-    serviceRequestId: integer('service_request_id').references(() => serviceRequests.id),
+    serviceRequestId: integer('service_request_id').references(
+      () => serviceRequests.id
+    ),
     clientName: varchar('client_name', { length: 255 }).notNull(),
-    serviceFee: numeric('service_fee', { precision: 12, scale: 2 }).default('0.00'),
+    serviceFee: numeric('service_fee', { precision: 12, scale: 2 }).default(
+      '0.00'
+    ),
     partFee: numeric('part_fee', { precision: 12, scale: 2 }).default('0.00'),
-    shippingFee: numeric('shipping_fee', { precision: 12, scale: 2 }).default('0.00'),
     ppn: numeric('ppn', { precision: 12, scale: 2 }).default('0.00'),
     total: numeric('total', { precision: 12, scale: 2 }).notNull(),
     status: invoiceStatusEnum('status').default('UNPAID'),
@@ -24,7 +39,9 @@ export const invoices = pgTable(
     ppnRate: numeric('ppn_rate', { precision: 5, scale: 2 }).default('11.00'),
     voidedAt: timestamp('voided_at', { mode: 'date' }),
     createdAt: timestamp('created_at', { mode: 'date' }).defaultNow(),
-    updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().$onUpdate(() => sql`now()`),
+    updatedAt: timestamp('updated_at', { mode: 'date' })
+      .defaultNow()
+      .$onUpdate(() => sql`now()`),
   },
   (table) => ({
     ticketIdx: index('inv_ticket_idx').on(table.ticketNumber),

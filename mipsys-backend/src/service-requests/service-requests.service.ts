@@ -46,7 +46,7 @@ export class ServiceRequestService {
     private productResolver: ServiceRequestProductResolver,
     private activityService: ServiceRequestActivityService,
     private statsService: ServiceRequestStatsService,
-    private stateMachine: ServiceRequestStateMachine,
+    private stateMachine: ServiceRequestStateMachine
   ) {}
 
   async findAll(filters: {
@@ -66,8 +66,8 @@ export class ServiceRequestService {
             like(serviceRequests.ticketNumber, `%${search}%`),
             like(customers.name, `%${search}%`),
             like(products.modelName, `%${search}%`),
-            like(products.serialNumber, `%${search}%`),
-          ),
+            like(products.serialNumber, `%${search}%`)
+          )
         );
       }
 
@@ -122,7 +122,6 @@ export class ServiceRequestService {
           serviceType: serviceRequests.serviceType,
           serviceFee: serviceRequests.serviceFee,
           partFee: serviceRequests.partFee,
-          shippingFee: serviceRequests.shippingFee,
           checkDate: serviceRequests.checkDate,
           spDate: serviceRequests.spDate,
           approveDate: serviceRequests.approveDate,
@@ -167,25 +166,28 @@ export class ServiceRequestService {
           dto.customerName,
           dto.address,
           dto.phone,
-          dto.customerType,
+          dto.customerType
         );
 
         const targetProductId = await this.productResolver.resolveProductId(
           tx,
           dto.serialNumber,
-          dto.modelName,
+          dto.modelName
         );
 
-        const [insertResult] = await tx.insert(serviceRequests).values({
-          ticketNumber: 'TEMP',
-          serviceType: dto.serviceType,
-          customerId: targetCustomerId,
-          productId: targetProductId,
-          adminId: adminId,
-          problemDescription: dto.problemDescription?.trim(),
-          statusService: StatusService.WAITING_CHECK,
-          incomingDate: new Date().toISOString().split('T')[0],
-        }).returning({ id: serviceRequests.id });
+        const [insertResult] = await tx
+          .insert(serviceRequests)
+          .values({
+            ticketNumber: 'TEMP',
+            serviceType: dto.serviceType,
+            customerId: targetCustomerId,
+            productId: targetProductId,
+            adminId: adminId,
+            problemDescription: dto.problemDescription?.trim(),
+            statusService: StatusService.WAITING_CHECK,
+            incomingDate: new Date().toISOString().split('T')[0],
+          })
+          .returning({ id: serviceRequests.id });
 
         const srId = insertResult.id;
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -256,13 +258,13 @@ export class ServiceRequestService {
 
       if (sr.statusService === 'DONE' || sr.statusService === 'CANCEL') {
         throw new BadRequestException(
-          `Tiket ${ticketNumber} sudah ${sr.statusService} dan tidak dapat diubah.`,
+          `Tiket ${ticketNumber} sudah ${sr.statusService} dan tidak dapat diubah.`
         );
       }
 
       this.stateMachine.validate(
         sr.statusService as SrStatusType,
-        dto.newStatus as SrStatusType,
+        dto.newStatus as SrStatusType
       );
 
       if (dto.problemDescription?.trim()) {
@@ -281,7 +283,7 @@ export class ServiceRequestService {
               quantity: partDto.quantity,
             },
             tx,
-            'PROPOSED',
+            'PROPOSED'
           );
         }
       }
@@ -300,9 +302,7 @@ export class ServiceRequestService {
           ...(dto.newStatus === 'SERVICE'
             ? {
                 spDate: !sr.spDate ? today : sr.spDate,
-                approveDate: !sr.approveDate
-                  ? today
-                  : sr.approveDate,
+                approveDate: !sr.approveDate ? today : sr.approveDate,
               }
             : {}),
           ...(dto.newStatus === 'DONE'
@@ -319,7 +319,7 @@ export class ServiceRequestService {
         sr.id,
         'DIAGNOSIS_UPDATED',
         `Status → ${dto.newStatus}${dto.parts?.length ? `, ${dto.parts.length} part diusulkan` : ''}`,
-        dto.performedBy ?? null,
+        dto.performedBy ?? null
       );
 
       return {
@@ -338,7 +338,8 @@ export class ServiceRequestService {
       } catch (error) {
         const msg = error instanceof Error ? error.message : 'Unknown error';
         this.logger.warn(`Auto-billing gagal untuk ${ticketNumber}: ${msg}`);
-        (result as any).invoiceWarning = `Invoice gagal dibuat: ${msg}. Buat invoice manual dari tombol BUAT INVOICE.`;
+        (result as any).invoiceWarning =
+          `Invoice gagal dibuat: ${msg}. Buat invoice manual dari tombol BUAT INVOICE.`;
       }
     }
 
@@ -355,20 +356,20 @@ export class ServiceRequestService {
 
       if (sr.statusService !== 'WAITING_APPROVE') {
         throw new BadRequestException(
-          `Penawaran hanya bisa dibuat pada status WAITING_APPROVE. Status saat ini: ${sr.statusService}`,
+          `Penawaran hanya bisa dibuat pada status WAITING_APPROVE. Status saat ini: ${sr.statusService}`
         );
       }
 
       const parts = await tx.query.orderParts.findMany({
         where: and(
           eq(orderParts.serviceRequestId, sr.id),
-          eq(orderParts.status, 'PROPOSED'),
+          eq(orderParts.status, 'PROPOSED')
         ),
       });
 
       if (parts.length === 0) {
         throw new BadRequestException(
-          'Tidak ada part yang diusulkan. Tambahkan part terlebih dahulu.',
+          'Tidak ada part yang diusulkan. Tambahkan part terlebih dahulu.'
         );
       }
 
@@ -380,7 +381,6 @@ export class ServiceRequestService {
         .update(serviceRequests)
         .set({
           serviceFee: dto.serviceFee.toString(),
-          shippingFee: (dto.shippingFee ?? 0).toString(),
           partFee: totalPartFee.toString(),
           updatedAt: new Date(),
         })
@@ -390,8 +390,8 @@ export class ServiceRequestService {
         tx,
         sr.id,
         'QUOTE_SAVED',
-        `Penawaran tersimpan: Jasa Rp${Number(dto.serviceFee).toLocaleString('id-ID')}, Part Rp${totalPartFee.toLocaleString('id-ID')}, Ongkos Kirim Rp${(dto.shippingFee ?? 0).toLocaleString('id-ID')}`,
-        dto.performedBy ?? null,
+        `Penawaran tersimpan: Jasa Rp${Number(dto.serviceFee).toLocaleString('id-ID')}, Part Rp${totalPartFee.toLocaleString('id-ID')}`,
+        dto.performedBy ?? null
       );
 
       return {
@@ -399,7 +399,6 @@ export class ServiceRequestService {
         ticketNumber,
         partFee: totalPartFee,
         serviceFee: dto.serviceFee,
-        shippingFee: dto.shippingFee ?? 0,
       };
     });
   }
@@ -414,13 +413,13 @@ export class ServiceRequestService {
 
       if (sr.statusService !== 'WAITING_APPROVE') {
         throw new BadRequestException(
-          `Pembatalan hanya bisa dilakukan pada status WAITING_APPROVE. Status saat ini: ${sr.statusService}`,
+          `Pembatalan hanya bisa dilakukan pada status WAITING_APPROVE. Status saat ini: ${sr.statusService}`
         );
       }
 
       this.stateMachine.validate(
         sr.statusService as SrStatusType,
-        'CANCEL' as SrStatusType,
+        'CANCEL' as SrStatusType
       );
 
       await tx
@@ -436,7 +435,7 @@ export class ServiceRequestService {
         sr.id,
         'QUOTE_REJECTED',
         'Penawaran ditolak pelanggan. Tiket dibatalkan.',
-        dto.performedBy ?? null,
+        dto.performedBy ?? null
       );
 
       return {
@@ -457,7 +456,7 @@ export class ServiceRequestService {
 
       if (sr.statusService !== 'WAITING_APPROVE') {
         throw new BadRequestException(
-          `Penawaran hanya bisa disetujui pada status WAITING_APPROVE. Status saat ini: ${sr.statusService}`,
+          `Penawaran hanya bisa disetujui pada status WAITING_APPROVE. Status saat ini: ${sr.statusService}`
         );
       }
 
@@ -466,20 +465,20 @@ export class ServiceRequestService {
         parseFloat(sr.partFee || '0') > 0;
       if (!hasQuote) {
         throw new BadRequestException(
-          'Belum ada penawaran yang disimpan. Simpan penawaran terlebih dahulu.',
+          'Belum ada penawaran yang disimpan. Simpan penawaran terlebih dahulu.'
         );
       }
 
       const parts = await tx.query.orderParts.findMany({
         where: and(
           eq(orderParts.serviceRequestId, sr.id),
-          eq(orderParts.status, 'PROPOSED'),
+          eq(orderParts.status, 'PROPOSED')
         ),
       });
 
       if (parts.length === 0) {
         throw new BadRequestException(
-          'Tidak ada part yang diusulkan. Tambahkan part terlebih dahulu.',
+          'Tidak ada part yang diusulkan. Tambahkan part terlebih dahulu.'
         );
       }
 
@@ -514,7 +513,7 @@ export class ServiceRequestService {
               part.quantity,
               ticketNumber,
               dto.performedBy ?? 1,
-              tx,
+              tx
             );
           }
 
@@ -529,7 +528,7 @@ export class ServiceRequestService {
 
       this.stateMachine.validate(
         sr.statusService as SrStatusType,
-        newStatus as SrStatusType,
+        newStatus as SrStatusType
       );
 
       const totalPartFee = parts.reduce((sum, p) => {
@@ -541,7 +540,9 @@ export class ServiceRequestService {
         .set({
           statusService: newStatus as any,
           approveDate: new Date().toISOString().split('T')[0],
-          ...(allInStock && !sr.spDate ? { spDate: new Date().toISOString().split('T')[0] } : {}),
+          ...(allInStock && !sr.spDate
+            ? { spDate: new Date().toISOString().split('T')[0] }
+            : {}),
         })
         .where(eq(serviceRequests.ticketNumber, ticketNumber));
 
@@ -552,7 +553,7 @@ export class ServiceRequestService {
         allInStock
           ? `Penawaran disetujui. ${parts.length} part dipotong dari stok. Status → SERVICE`
           : `Penawaran disetujui. ${parts.length} part, sebagian tidak tersedia. Status → AWAITING_PARTS`,
-        dto.performedBy ?? null,
+        dto.performedBy ?? null
       );
 
       return {
@@ -562,7 +563,6 @@ export class ServiceRequestService {
         allInStock,
         partFee: totalPartFee,
         serviceFee: sr.serviceFee,
-        shippingFee: sr.shippingFee,
         partsProcessed: parts.length,
       };
     });
@@ -578,14 +578,14 @@ export class ServiceRequestService {
 
       if (sr.statusService !== 'AWAITING_PARTS') {
         throw new BadRequestException(
-          `Cek ulang stok hanya bisa dilakukan pada status AWAITING_PARTS. Status saat ini: ${sr.statusService}`,
+          `Cek ulang stok hanya bisa dilakukan pada status AWAITING_PARTS. Status saat ini: ${sr.statusService}`
         );
       }
 
       const outOfStockParts = await tx.query.orderParts.findMany({
         where: and(
           eq(orderParts.serviceRequestId, sr.id),
-          eq(orderParts.status, 'OUT_OF_STOCK'),
+          eq(orderParts.status, 'OUT_OF_STOCK')
         ),
       });
 
@@ -627,7 +627,7 @@ export class ServiceRequestService {
             op.quantity,
             ticketNumber,
             dto.performedBy ?? 1,
-            tx,
+            tx
           );
         }
 
@@ -639,7 +639,7 @@ export class ServiceRequestService {
 
       this.stateMachine.validate(
         sr.statusService as SrStatusType,
-        'SERVICE' as SrStatusType,
+        'SERVICE' as SrStatusType
       );
 
       await tx
@@ -656,7 +656,7 @@ export class ServiceRequestService {
         sr.id,
         'SR_STOCK_RETRY',
         `Cek ulang stok: ${outOfStockParts.length} part tersedia. Status → SERVICE`,
-        dto.performedBy ?? null,
+        dto.performedBy ?? null
       );
 
       return {
@@ -679,13 +679,13 @@ export class ServiceRequestService {
 
       if (sr.statusService !== 'DONE' && sr.statusService !== 'CANCEL') {
         throw new BadRequestException(
-          `Penutupan hanya bisa dilakukan pada status DONE atau CANCEL. Status saat ini: ${sr.statusService}`,
+          `Penutupan hanya bisa dilakukan pada status DONE atau CANCEL. Status saat ini: ${sr.statusService}`
         );
       }
 
       this.stateMachine.validate(
         sr.statusService as SrStatusType,
-        'CLOSED' as SrStatusType,
+        'CLOSED' as SrStatusType
       );
 
       const today = new Date().toISOString().split('T')[0];
@@ -706,7 +706,7 @@ export class ServiceRequestService {
         sr.id,
         'SR_CLOSE',
         `Tiket ditutup. Status: ${sr.statusService} → CLOSED`,
-        dto.performedBy ?? null,
+        dto.performedBy ?? null
       );
 
       return { success: true, ticketNumber, newStatus: 'CLOSED' };

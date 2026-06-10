@@ -1,5 +1,12 @@
 import { apiClient } from '@/src/lib/api-client';
-import { Invoice, FinanceStats, Expense, ProfitLoss, PpnReport, DashboardData } from '../types';
+import {
+  Invoice,
+  FinanceStats,
+  Expense,
+  ProfitLoss,
+  PpnReport,
+  DashboardData,
+} from '../types';
 
 export const financeApi = {
   // --- Invoices ---
@@ -17,14 +24,26 @@ export const financeApi = {
   },
 
   createInvoice: async (data: {
-    ticketNumber: string; clientName: string; serviceFee: number;
-    partFee: number; shippingFee: number; paymentMethod?: string; notes?: string;
+    ticketNumber: string;
+    clientName: string;
+    serviceFee: number;
+    partFee: number;
+    paymentMethod?: string;
+    notes?: string;
   }) => {
     const response = await apiClient.post('/finance/invoices', data);
     return response.data;
   },
 
-  recordPayment: async (id: number, data: { amount: number; paymentMethod: string; referenceNumber?: string; notes?: string }) => {
+  recordPayment: async (
+    id: number,
+    data: {
+      amount: number;
+      paymentMethod: string;
+      referenceNumber?: string;
+      notes?: string;
+    },
+  ) => {
     const response = await apiClient.post(`/finance/invoices/${id}/pay`, data);
     return response.data;
   },
@@ -40,22 +59,42 @@ export const financeApi = {
   },
 
   generateFromSR: async (ticketNumber: string) => {
-    const response = await apiClient.post(`/finance/invoices/from-sr/${ticketNumber}`);
+    const response = await apiClient.post(
+      `/finance/invoices/from-sr/${ticketNumber}`,
+    );
     return response.data;
   },
 
   // --- Expenses ---
-  getExpenses: async (params?: { type?: string; category?: string; startDate?: string; endDate?: string }) => {
+  getExpenses: async (params?: {
+    type?: string;
+    category?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => {
     const response = await apiClient.get('/finance/expenses', { params });
     return response.data;
   },
 
-  createExpense: async (data: { description: string; amount: number; expenseDate: string; category?: string }) => {
+  createExpense: async (data: {
+    description: string;
+    amount: number;
+    expenseDate: string;
+    category?: string;
+  }) => {
     const response = await apiClient.post('/finance/expenses', data);
     return response.data;
   },
 
-  updateExpense: async (id: number, data: Partial<{ description: string; amount: number; expenseDate: string; category: string }>) => {
+  updateExpense: async (
+    id: number,
+    data: Partial<{
+      description: string;
+      amount: number;
+      expenseDate: string;
+      category: string;
+    }>,
+  ) => {
     const response = await apiClient.patch(`/finance/expenses/${id}`, data);
     return response.data;
   },
@@ -66,18 +105,27 @@ export const financeApi = {
   },
 
   syncPoExpenses: async (poId?: number) => {
-    const response = await apiClient.post('/finance/expenses/sync-po', null, { params: { poId } });
+    const response = await apiClient.post('/finance/expenses/sync-po', null, {
+      params: { poId },
+    });
     return response.data;
   },
 
   // --- Reports ---
-  getProfitLoss: async (startDate: string, endDate: string): Promise<ProfitLoss> => {
-    const response = await apiClient.get('/finance/reports/profit-loss', { params: { startDate, endDate } });
+  getProfitLoss: async (
+    startDate: string,
+    endDate: string,
+  ): Promise<ProfitLoss> => {
+    const response = await apiClient.get('/finance/reports/profit-loss', {
+      params: { startDate, endDate },
+    });
     return response.data;
   },
 
   getPpnReport: async (year: number, month: number): Promise<PpnReport> => {
-    const response = await apiClient.get('/finance/reports/tax/ppn', { params: { year, month } });
+    const response = await apiClient.get('/finance/reports/tax/ppn', {
+      params: { year, month },
+    });
     return response.data;
   },
 
@@ -93,23 +141,32 @@ export const financeApi = {
   },
 
   updatePpnRate: async (ppnRate: number) => {
-    const response = await apiClient.patch('/finance/settings/ppn-rate', { ppnRate });
+    const response = await apiClient.patch('/finance/settings/ppn-rate', {
+      ppnRate,
+    });
     return response.data;
   },
 
   updateInvoicePrefix: async (invoicePrefix: string) => {
-    const response = await apiClient.patch('/finance/settings/invoice-prefix', { invoicePrefix });
+    const response = await apiClient.patch('/finance/settings/invoice-prefix', {
+      invoicePrefix,
+    });
     return response.data;
   },
 
   // --- Export ---
   exportInvoiceXlsx: async (id: number) => {
-    const response = await apiClient.get(`/finance/invoices/${id}/export/xlsx`, { responseType: 'blob' });
+    const response = await apiClient.get(
+      `/finance/invoices/${id}/export/xlsx`,
+      { responseType: 'blob' },
+    );
     return response.data;
   },
 
   exportInvoicePdf: async (id: number) => {
-    const response = await apiClient.get(`/finance/invoices/${id}/export/pdf`, { responseType: 'blob' });
+    const response = await apiClient.get(`/finance/invoices/${id}/export/pdf`, {
+      responseType: 'blob',
+    });
     return response.data;
   },
 };

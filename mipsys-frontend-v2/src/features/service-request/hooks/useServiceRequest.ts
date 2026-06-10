@@ -20,7 +20,6 @@ export interface ServiceRequestDetail {
   closeDate?: string;
   serviceFee: string;
   partFee: string;
-  shippingFee: string;
   hasInvoice?: boolean;
 }
 
@@ -52,7 +51,6 @@ export const useServiceRequest = (ticketNumber: string) => {
         closeDate: res.closeDate || undefined,
         serviceFee: res.serviceFee || '0',
         partFee: res.partFee || '0',
-        shippingFee: res.shippingFee || '0',
         hasInvoice: res.hasInvoice ?? false,
       });
     } catch (error) {

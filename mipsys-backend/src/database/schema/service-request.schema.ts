@@ -1,10 +1,15 @@
-import { pgTable, varchar, text, date, numeric, integer, timestamp, index } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
 import {
-  staffRoleEnum,
-  serviceTypeEnum,
-  serviceStatusEnum,
-} from './enums';
+  pgTable,
+  varchar,
+  text,
+  date,
+  numeric,
+  integer,
+  timestamp,
+  index,
+} from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { staffRoleEnum, serviceTypeEnum, serviceStatusEnum } from './enums';
 
 export const staff = pgTable('staff', {
   id: integer('id').generatedAlwaysAsIdentity().primaryKey(),
@@ -50,11 +55,14 @@ export const serviceRequests = pgTable(
     statusService: serviceStatusEnum('status_service').default('WAITING_CHECK'),
     statusSystem: varchar('status_system', { length: 50 }),
     remarksHistory: text('remarks_history'),
-    serviceFee: numeric('service_fee', { precision: 12, scale: 2 }).default('0.00'),
+    serviceFee: numeric('service_fee', { precision: 12, scale: 2 }).default(
+      '0.00'
+    ),
     partFee: numeric('part_fee', { precision: 12, scale: 2 }).default('0.00'),
-    shippingFee: numeric('shipping_fee', { precision: 12, scale: 2 }).default('0.00'),
     createdAt: timestamp('created_at', { mode: 'date' }).defaultNow(),
-    updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().$onUpdate(() => sql`now()`),
+    updatedAt: timestamp('updated_at', { mode: 'date' })
+      .defaultNow()
+      .$onUpdate(() => sql`now()`),
   },
   (table) => ({
     ticketIdx: index('ticket_idx').on(table.ticketNumber),
@@ -64,7 +72,9 @@ export const serviceRequests = pgTable(
 
 export const serviceLogs = pgTable('service_logs', {
   id: integer('id').generatedAlwaysAsIdentity().primaryKey(),
-  serviceRequestId: integer('service_request_id').references(() => serviceRequests.id),
+  serviceRequestId: integer('service_request_id').references(
+    () => serviceRequests.id
+  ),
   action: varchar('action', { length: 100 }).notNull(),
   description: text('description'),
   performedBy: integer('performed_by'),

@@ -9,11 +9,6 @@ export class ProsesKasirDto {
   @Min(0)
   partFee!: number;
 
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  shippingFee?: number;
-
   @IsOptional()
   @IsString()
   paymentMethod?: string;

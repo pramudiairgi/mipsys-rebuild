@@ -29,10 +29,6 @@ export class CreateInvoiceDto {
   @Type(() => Number)
   partFee!: number;
 
-  @IsNumber()
-  @Type(() => Number)
-  shippingFee!: number;
-
   @IsOptional()
   @IsEnum(PaymentMethod)
   paymentMethod?: PaymentMethod;
