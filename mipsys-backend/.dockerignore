@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+docker
+test
+*.spec.ts
+coverage
+.prettierrc
+README.md
+railway.json
