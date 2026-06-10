@@ -6,13 +6,13 @@ services:
     ports:
       - '5433:5432'
     environment:
-      POSTGRES_USER: intern
-      POSTGRES_PASSWORD: intern123
+      POSTGRES_USER: mipsys
+      POSTGRES_PASSWORD: mipsys
       POSTGRES_DB: db_mipsys
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U intern -d db_mipsys']
+      test: ['CMD-SHELL', 'pg_isready -U mipsys -d db_mipsys']
       interval: 5s
       timeout: 5s
       retries: 5
