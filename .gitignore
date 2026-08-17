@@ -5,5 +5,5 @@ PROMPT.md
 .agents/
 /graphify-out
 /docs
-/.opencode
+# /.opencode
 skill-lock.json
