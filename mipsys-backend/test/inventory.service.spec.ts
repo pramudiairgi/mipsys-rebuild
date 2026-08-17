@@ -21,11 +21,20 @@ const mockEventEmitter = {
   emit: jest.fn(),
 };
 
-const mockDb = {
+interface MockDb {
+  query: {
+    spareParts: typeof mockSparePartsQuery;
+  };
+  transaction: jest.Mock<Promise<unknown>, [(db: MockDb) => Promise<unknown>]>;
+}
+
+const mockDb: MockDb = {
   query: {
     spareParts: mockSparePartsQuery,
   },
-  transaction: jest.fn((cb: (db: any) => any) => cb(mockDb)),
+  transaction: jest.fn(async (cb: (db: MockDb) => Promise<unknown>) =>
+    cb(mockDb)
+  ),
 };
 
 describe('InventoryReadService', () => {
@@ -54,8 +63,8 @@ describe('InventoryReadService', () => {
       const result = await service.searchParts('Fuser');
 
       expect(mockSparePartsQuery.findMany).toHaveBeenCalledWith({
-        where: expect.any(Object),
-        orderBy: expect.any(Array),
+        where: expect.objectContaining({}) as object,
+        orderBy: expect.arrayContaining([]) as unknown[],
         limit: 50,
       });
       expect(result).toEqual(mockParts);
@@ -85,8 +94,8 @@ describe('InventoryReadService', () => {
       const result = await service.getLowStockAlert();
 
       expect(mockSparePartsQuery.findMany).toHaveBeenCalledWith({
-        where: expect.any(Object),
-        orderBy: expect.any(Array),
+        where: expect.objectContaining({}) as object,
+        orderBy: expect.arrayContaining([]) as unknown[],
       });
       expect(result).toEqual(lowStockParts);
     });
@@ -135,7 +144,7 @@ describe('InventoryReadService', () => {
       expect(result).toEqual(allParts);
       expect(mockSparePartsQuery.findMany).toHaveBeenCalledWith({
         where: undefined,
-        orderBy: expect.any(Array),
+        orderBy: expect.arrayContaining([]) as unknown[],
       });
     });
 
@@ -156,8 +165,8 @@ describe('InventoryReadService', () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe(1);
       expect(mockSparePartsQuery.findMany).toHaveBeenCalledWith({
-        where: expect.anything(),
-        orderBy: expect.any(Array),
+        where: expect.objectContaining({}) as object,
+        orderBy: expect.arrayContaining([]) as unknown[],
       });
     });
 

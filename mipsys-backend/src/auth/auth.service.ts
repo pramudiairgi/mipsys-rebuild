@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import type { StringValue } from 'ms';
 import { eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
@@ -60,11 +61,11 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: (process.env.JWT_EXPIRES_IN || '1d') as any,
+      expiresIn: (process.env.JWT_EXPIRES_IN || '1d') as StringValue,
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: '7d' as any,
+      expiresIn: '7d',
     });
 
     await this.db

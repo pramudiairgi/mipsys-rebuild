@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { StandardHttpExceptionFilter } from './common/filters/http-exception.filter';
 import { appConfig } from './config';
@@ -21,11 +22,11 @@ async function bootstrap() {
     origin: appConfig.corsOrigins,
   });
 
-  app.use('/health', (_req: any, res: any) => {
+  app.use('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
   await app.listen(process.env.PORT ?? 3001);
 }
 
-bootstrap();
+void bootstrap();

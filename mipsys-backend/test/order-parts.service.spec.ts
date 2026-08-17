@@ -1,31 +1,73 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { OrderPartsService } from '../src/order-parts/order-parts.service';
-import { orderParts, spareParts } from '../src/database/schema';
+import { orderParts } from '../src/database/schema';
 
-const mockDb = {
-  insert: jest.fn().mockReturnValue({
-    values: jest.fn().mockReturnValue({
-      returning: jest.fn().mockResolvedValue([{ id: 1 }]),
+interface ReturningChain {
+  returning: jest.Mock<Promise<Array<Record<string, number>>>, []>;
+}
+
+interface InsertChain {
+  values: jest.Mock<ReturningChain, []>;
+}
+
+interface WhereChain {
+  where: jest.Mock<Promise<unknown[]>, [unknown]>;
+}
+
+interface SelectChain {
+  from: jest.Mock<WhereChain, []>;
+}
+
+interface UpdateChain {
+  set: jest.Mock<WhereChain, [unknown]>;
+}
+
+interface MockDb {
+  insert: jest.Mock<InsertChain, [unknown]>;
+  select: jest.Mock<SelectChain, []>;
+  update: jest.Mock<UpdateChain, [unknown]>;
+  query: {
+    orderParts: {
+      findMany: jest.Mock<Promise<unknown[]>, [unknown]>;
+      findFirst: jest.Mock<Promise<unknown>, [unknown]>;
+    };
+    spareParts: {
+      findFirst: jest.Mock<Promise<unknown>, [unknown]>;
+    };
+  };
+  transaction: jest.Mock<Promise<unknown>, [(db: MockDb) => Promise<unknown>]>;
+}
+
+const mockDb: MockDb = {
+  insert: jest.fn<InsertChain, [unknown]>().mockReturnValue({
+    values: jest.fn<ReturningChain, []>().mockReturnValue({
+      returning: jest
+        .fn<Promise<Array<Record<string, number>>>, []>()
+        .mockResolvedValue([{ id: 1 }]),
     }),
   }),
-  select: jest.fn().mockReturnValue({
-    from: jest.fn().mockReturnValue({
-      where: jest.fn().mockResolvedValue([]),
+  select: jest.fn<SelectChain, []>().mockReturnValue({
+    from: jest.fn<WhereChain, []>().mockReturnValue({
+      where: jest.fn<Promise<unknown[]>, [unknown]>().mockResolvedValue([]),
+    }),
+  }),
+  update: jest.fn<UpdateChain, [unknown]>().mockReturnValue({
+    set: jest.fn<WhereChain, [unknown]>().mockReturnValue({
+      where: jest.fn<Promise<unknown[]>, [unknown]>().mockResolvedValue([]),
     }),
   }),
   query: {
     orderParts: {
-      findMany: jest.fn().mockResolvedValue([]),
-      findFirst: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn<Promise<unknown[]>, [unknown]>().mockResolvedValue([]),
+      findFirst: jest.fn<Promise<unknown>, [unknown]>().mockResolvedValue(null),
     },
-    spareParts: { findFirst: jest.fn().mockResolvedValue(null) },
+    spareParts: {
+      findFirst: jest.fn<Promise<unknown>, [unknown]>().mockResolvedValue(null),
+    },
   },
-  update: jest.fn().mockReturnValue({
-    set: jest.fn().mockReturnValue({
-      where: jest.fn().mockResolvedValue([]),
-    }),
-  }),
-  transaction: jest.fn((cb) => cb(mockDb)),
+  transaction: jest
+    .fn<(db: MockDb) => Promise<unknown>, [(db: MockDb) => Promise<unknown>]>()
+    .mockImplementation((cb) => cb(mockDb)),
 };
 
 describe('OrderPartsService', () => {

@@ -1,5 +1,5 @@
 import { Injectable, Inject, NotFoundException, Logger } from '@nestjs/common';
-import { eq, like, ilike, or, desc, and, sql, lt, gt } from 'drizzle-orm';
+import { eq, like, ilike, or, desc, and, sql, lt, gt, SQL } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
 import { spareParts, categoryModels } from '../database/schema';
@@ -36,16 +36,15 @@ export class InventoryReadService {
     const search = params?.search;
     const page = params?.page ?? 1;
     const limit = params?.limit ?? 10;
-    const conditions: ReturnType<typeof sql>[] = [];
+    const conditions: SQL[] = [];
 
     if (search) {
       const pattern = `%${search}%`;
-      conditions.push(
-        or(
-          like(spareParts.partName, pattern),
-          like(spareParts.partCode, pattern)
-        ) as any
+      const searchCondition = or(
+        like(spareParts.partName, pattern),
+        like(spareParts.partCode, pattern)
       );
+      if (searchCondition) conditions.push(searchCondition);
     }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
@@ -79,27 +78,25 @@ export class InventoryReadService {
     status?: 'ok' | 'low' | 'empty';
     search?: string;
   }) {
-    const conditions: ReturnType<typeof sql>[] = [];
+    const conditions: SQL[] = [];
 
     if (filters?.search) {
       const pattern = `%${filters.search}%`;
-      conditions.push(
-        or(
-          like(spareParts.partName, pattern),
-          like(spareParts.partCode, pattern)
-        ) as any
+      const searchCondition = or(
+        like(spareParts.partName, pattern),
+        like(spareParts.partCode, pattern)
       );
+      if (searchCondition) conditions.push(searchCondition);
     }
 
     if (filters?.status === 'ok') {
       conditions.push(sql`${spareParts.stock} >= ${spareParts.minStock}`);
     } else if (filters?.status === 'low') {
-      conditions.push(
-        and(
-          gt(spareParts.stock, 0),
-          sql`${spareParts.stock} < ${spareParts.minStock}`
-        ) as any
+      const lowCondition = and(
+        gt(spareParts.stock, 0),
+        sql`${spareParts.stock} < ${spareParts.minStock}`
       );
+      if (lowCondition) conditions.push(lowCondition);
     } else if (filters?.status === 'empty') {
       conditions.push(eq(spareParts.stock, 0));
     }

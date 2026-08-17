@@ -94,7 +94,7 @@ export class InventoryListener {
       .where(eq(financeSettings.key, counterKey));
 
     const updated = await this.db.query.financeSettings.findFirst({
-      where: eq(financeSettings.key, counterKey) as any,
+      where: eq(financeSettings.key, counterKey),
     });
     const counter = updated ? parseInt(updated.value, 10) : 1;
 

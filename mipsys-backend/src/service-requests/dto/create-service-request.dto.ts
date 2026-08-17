@@ -5,8 +5,6 @@ import {
   MaxLength,
   IsIn,
   IsInt,
-  IsNumber,
-  Min,
   Matches,
 } from 'class-validator';
 

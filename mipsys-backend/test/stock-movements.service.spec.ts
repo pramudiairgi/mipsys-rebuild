@@ -1,39 +1,77 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { StockMovementsService } from '../src/stock-movements/stock-movements.service';
 import { stockMovements, spareParts } from '../src/database/schema';
-import { MySql2Database } from 'drizzle-orm/mysql2';
-import { eq } from 'drizzle-orm';
 import { BadRequestException } from '@nestjs/common';
 
-let mockStockRows: any[] = [];
+type StockRow = { id: number; stock: number };
 
-const mockDb = {
-  insert: jest.fn().mockReturnValue({
-    values: jest.fn().mockReturnValue({
-      returning: jest.fn().mockResolvedValue([{ id: 1 }]),
-    }),
-  }),
-  select: jest.fn().mockReturnValue({
-    from: jest.fn().mockReturnValue({
-      where: jest.fn().mockReturnValue({
-        limit: jest
-          .fn()
-          .mockImplementation(() => Promise.resolve(mockStockRows)),
-      }),
-      orderBy: jest.fn().mockResolvedValue([]),
-    }),
-  }),
-  update: jest.fn().mockReturnValue({
-    set: jest.fn().mockReturnValue({
-      where: jest.fn().mockResolvedValue([]),
-    }),
-  }),
-  transaction: jest.fn((cb) => cb(mockDb)),
+let mockStockRows: StockRow[] = [];
+
+interface InsertChain {
+  values: jest.Mock<Promise<unknown[]>, [unknown]>;
+}
+
+interface LimitResult {
+  limit: jest.Mock<Promise<StockRow[]>, []>;
+}
+
+interface FromResult {
+  where: jest.Mock<LimitResult, [unknown]>;
+  orderBy: jest.Mock<Promise<unknown[]>, [unknown]>;
+}
+
+interface SelectChain {
+  from: jest.Mock<FromResult, []>;
+}
+
+interface SetChain {
+  set: jest.Mock<
+    { where: jest.Mock<Promise<unknown[]>, [unknown]> },
+    [unknown]
+  >;
+}
+
+interface MockDb {
+  insert: jest.Mock<InsertChain, [unknown]>;
+  select: jest.Mock<SelectChain, []>;
+  update: jest.Mock<SetChain, [unknown]>;
   query: {
     stockMovements: {
-      findMany: jest.fn().mockResolvedValue([]),
+      findMany: jest.Mock<Promise<unknown[]>, [unknown]>;
+    };
+  };
+  transaction: jest.Mock<Promise<unknown>, [(db: MockDb) => Promise<unknown>]>;
+}
+
+const mockDb: MockDb = {
+  insert: jest.fn<InsertChain, [unknown]>().mockReturnValue({
+    values: jest.fn<Promise<unknown[]>, [unknown]>().mockResolvedValue([]),
+  }),
+  select: jest.fn<SelectChain, []>().mockReturnValue({
+    from: jest.fn<FromResult, []>().mockReturnValue({
+      where: jest.fn<LimitResult, [unknown]>().mockReturnValue({
+        limit: jest
+          .fn<Promise<StockRow[]>, []>()
+          .mockImplementation(() => Promise.resolve(mockStockRows)),
+      }),
+      orderBy: jest.fn<Promise<unknown[]>, [unknown]>().mockResolvedValue([]),
+    }),
+  }),
+  update: jest.fn<SetChain, [unknown]>().mockReturnValue({
+    set: jest
+      .fn<{ where: jest.Mock<Promise<unknown[]>, [unknown]> }, [unknown]>()
+      .mockReturnValue({
+        where: jest.fn<Promise<unknown[]>, [unknown]>().mockResolvedValue([]),
+      }),
+  }),
+  query: {
+    stockMovements: {
+      findMany: jest.fn<Promise<unknown[]>, [unknown]>().mockResolvedValue([]),
     },
   },
+  transaction: jest
+    .fn<(db: MockDb) => Promise<unknown>, [(db: MockDb) => Promise<unknown>]>()
+    .mockImplementation((cb) => cb(mockDb)),
 };
 
 describe('StockMovementsService', () => {
@@ -96,7 +134,12 @@ describe('StockMovementsService', () => {
     it('should increase stock for positive quantity', async () => {
       mockStockRows = [{ id: 1, stock: 10 }];
 
-      await service.updateStock(mockDb as any, 1, 5, 'ADJUSTMENT');
+      await service.updateStock(
+        mockDb as unknown as Parameters<typeof service.updateStock>[0],
+        1,
+        5,
+        'ADJUSTMENT'
+      );
 
       expect(mockDb.update).toHaveBeenCalledWith(spareParts);
     });
@@ -104,7 +147,12 @@ describe('StockMovementsService', () => {
     it('should decrease stock for negative quantity', async () => {
       mockStockRows = [{ id: 1, stock: 10 }];
 
-      await service.updateStock(mockDb as any, 1, -3, 'SERVICE_USE');
+      await service.updateStock(
+        mockDb as unknown as Parameters<typeof service.updateStock>[0],
+        1,
+        -3,
+        'SERVICE_USE'
+      );
 
       expect(mockDb.update).toHaveBeenCalledWith(spareParts);
     });
@@ -113,7 +161,12 @@ describe('StockMovementsService', () => {
       mockStockRows = [{ id: 1, stock: 2 }];
 
       await expect(
-        service.updateStock(mockDb as any, 1, -5, 'SERVICE_USE')
+        service.updateStock(
+          mockDb as unknown as Parameters<typeof service.updateStock>[0],
+          1,
+          -5,
+          'SERVICE_USE'
+        )
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -121,7 +174,12 @@ describe('StockMovementsService', () => {
       mockStockRows = [];
 
       await expect(
-        service.updateStock(mockDb as any, 999, 5, 'ADJUSTMENT')
+        service.updateStock(
+          mockDb as unknown as Parameters<typeof service.updateStock>[0],
+          999,
+          5,
+          'ADJUSTMENT'
+        )
       ).rejects.toThrow(BadRequestException);
     });
   });

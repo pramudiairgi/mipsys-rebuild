@@ -3,7 +3,6 @@ import {
   Inject,
   NotFoundException,
   BadRequestException,
-  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -22,9 +21,7 @@ import { StockMovementsService } from '../stock-movements/stock-movements.servic
 import { PoItemsService } from './po-items.service';
 import { validatePoTransition, PoStatusType } from './po-state-machine.guard';
 
-type DrizzleTx = Parameters<
-  Parameters<NodePgDatabase<typeof schema>['transaction']>[0]
->[0];
+type PoItem = typeof poItems.$inferSelect;
 
 @Injectable()
 export class PurchaseOrdersService {
@@ -41,10 +38,10 @@ export class PurchaseOrdersService {
     validatePoTransition(current, next);
   }
 
-  private async enrichItems(items: any[]) {
-    const nullPartIds = items
-      .filter((i) => !i.partName && i.sparePartId)
-      .map((i) => i.sparePartId);
+  private async enrichItems(items: PoItem[]) {
+    const nullPartIds = items.flatMap((i) =>
+      !i.partName && i.sparePartId ? [i.sparePartId] : []
+    );
     if (nullPartIds.length === 0) return items;
 
     const parts = await this.db.query.spareParts.findMany({
@@ -390,7 +387,7 @@ export class PurchaseOrdersService {
       .where(eq(financeSettings.key, counterKey));
 
     const updated = await this.db.query.financeSettings.findFirst({
-      where: eq(financeSettings.key, counterKey) as any,
+      where: eq(financeSettings.key, counterKey),
     });
     const counter = updated ? parseInt(updated.value, 10) : 1;
 

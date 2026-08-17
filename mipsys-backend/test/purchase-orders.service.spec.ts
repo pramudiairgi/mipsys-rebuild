@@ -1,8 +1,4 @@
-import {
-  validatePoTransition,
-  PoStatusType,
-  VALID_PO_TRANSITIONS,
-} from '../src/purchase-orders/po-state-machine.guard';
+import { validatePoTransition } from '../src/purchase-orders/po-state-machine.guard';
 import { BadRequestException } from '@nestjs/common';
 
 describe('PO State Machine', () => {

@@ -3,6 +3,9 @@ import { eq, and, gte, lte } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
 import { invoices, expenses } from '../database/schema';
+import { invoiceStatusEnum } from '../database/schema/enums';
+
+type InvoiceStatus = (typeof invoiceStatusEnum.enumValues)[number];
 
 @Injectable()
 export class ReportService {
@@ -13,10 +16,10 @@ export class ReportService {
   async getProfitLoss(startDate: string, endDate: string) {
     const revenueData = await this.db.query.invoices.findMany({
       where: and(
-        eq(invoices.status, 'PAID' as any),
+        eq(invoices.status, 'PAID' as InvoiceStatus),
         gte(invoices.paidDate, startDate),
         lte(invoices.paidDate, endDate)
-      ) as any,
+      ),
     });
     const totalRevenue = revenueData.reduce(
       (s, i) => s + parseFloat(i.total || '0'),
@@ -27,7 +30,7 @@ export class ReportService {
       where: and(
         gte(expenses.expenseDate, startDate),
         lte(expenses.expenseDate, endDate)
-      ) as any,
+      ),
     });
     const totalExpenses = expenseData.reduce(
       (s, e) => s + parseFloat(e.amount || '0'),
@@ -50,10 +53,10 @@ export class ReportService {
 
     const paidInvoices = await this.db.query.invoices.findMany({
       where: and(
-        eq(invoices.status, 'PAID' as any),
+        eq(invoices.status, 'PAID' as InvoiceStatus),
         gte(invoices.paidDate, startDate),
         lte(invoices.paidDate, endDate)
-      ) as any,
+      ),
     });
 
     const totalPpn = paidInvoices.reduce(
@@ -77,7 +80,12 @@ export class ReportService {
 
   async getDashboard() {
     const now = new Date();
-    const monthlyData: any[] = [];
+    const monthlyData: {
+      label: string;
+      revenue: number;
+      expense: number;
+      profit: number;
+    }[] = [];
 
     for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -89,10 +97,10 @@ export class ReportService {
 
       const monthRevenue = await this.db.query.invoices.findMany({
         where: and(
-          eq(invoices.status, 'PAID' as any),
+          eq(invoices.status, 'PAID' as InvoiceStatus),
           gte(invoices.paidDate, startDate),
           lte(invoices.paidDate, endDate)
-        ) as any,
+        ),
       });
       const revenue = monthRevenue.reduce(
         (s, i) => s + parseFloat(i.total || '0'),
@@ -103,7 +111,7 @@ export class ReportService {
         where: and(
           gte(expenses.expenseDate, startDate),
           lte(expenses.expenseDate, endDate)
-        ) as any,
+        ),
       });
       const expense = monthExpenses.reduce(
         (s, e) => s + parseFloat(e.amount || '0'),

@@ -6,7 +6,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { desc, eq, and, like, or, sql } from 'drizzle-orm';
+import { desc, eq, and, like, or, sql, SQL } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
 import {
@@ -17,7 +17,7 @@ import {
   orderParts,
   spareParts,
 } from '../database/schema';
-import { DrizzleTx } from '../database/types';
+import { StatusServiceType } from '../database/schema/common.enums';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { DiagnoseSrDto } from './dto/diagnose-sr.dto';
 import { SaveQuoteDto } from './dto/save-quote.dto';
@@ -58,21 +58,22 @@ export class ServiceRequestService {
     try {
       const { search, page = 1, limit = 10, status } = filters;
 
-      const conditions: any[] = [];
+      const conditions: SQL[] = [];
 
       if (search) {
-        conditions.push(
-          or(
-            like(serviceRequests.ticketNumber, `%${search}%`),
-            like(customers.name, `%${search}%`),
-            like(products.modelName, `%${search}%`),
-            like(products.serialNumber, `%${search}%`)
-          )
+        const searchCondition = or(
+          like(serviceRequests.ticketNumber, `%${search}%`),
+          like(customers.name, `%${search}%`),
+          like(products.modelName, `%${search}%`),
+          like(products.serialNumber, `%${search}%`)
         );
+        if (searchCondition) conditions.push(searchCondition);
       }
 
       if (status && status !== 'ALL') {
-        conditions.push(eq(serviceRequests.statusService, status as any));
+        conditions.push(
+          eq(serviceRequests.statusService, status as StatusServiceType)
+        );
       }
 
       const offset = (page - 1) * limit;
@@ -242,104 +243,118 @@ export class ServiceRequestService {
         };
       } catch (error) {
         if (error instanceof NotFoundException) throw error;
-        this.logger.error('[UPDATE_ENTRY] Error:', { ticketNumber, error });
+        const message = error instanceof Error ? error.message : 'Unknown';
+        this.logger.error('[UPDATE_ENTRY] Error:', {
+          ticketNumber,
+          message,
+        });
         throw new InternalServerErrorException('Gagal memperbarui data.');
       }
     });
   }
 
   async diagnose(ticketNumber: string, dto: DiagnoseSrDto) {
-    const result = await this.db.transaction(async (tx) => {
-      const sr = await tx.query.serviceRequests.findFirst({
-        where: eq(serviceRequests.ticketNumber, ticketNumber),
-      });
-      if (!sr)
-        throw new NotFoundException(`Tiket ${ticketNumber} tidak ditemukan.`);
+    type DiagnoseResult = {
+      success: boolean;
+      ticketNumber: string;
+      newStatus: string;
+      partsAdded: number;
+      invoice?: unknown;
+      invoiceWarning?: string;
+    };
 
-      if (sr.statusService === 'DONE' || sr.statusService === 'CANCEL') {
-        throw new BadRequestException(
-          `Tiket ${ticketNumber} sudah ${sr.statusService} dan tidak dapat diubah.`
-        );
-      }
+    const result = await this.db.transaction(
+      async (tx): Promise<DiagnoseResult> => {
+        const sr = await tx.query.serviceRequests.findFirst({
+          where: eq(serviceRequests.ticketNumber, ticketNumber),
+        });
+        if (!sr)
+          throw new NotFoundException(`Tiket ${ticketNumber} tidak ditemukan.`);
 
-      this.stateMachine.validate(
-        sr.statusService as SrStatusType,
-        dto.newStatus
-      );
-
-      if (dto.problemDescription?.trim()) {
-        await tx
-          .update(serviceRequests)
-          .set({ problemDescription: dto.problemDescription.trim() })
-          .where(eq(serviceRequests.ticketNumber, ticketNumber));
-      }
-
-      if (dto.parts && dto.parts.length > 0) {
-        for (const partDto of dto.parts) {
-          await this.orderPartsService.addPart(
-            {
-              serviceRequestId: sr.id,
-              sparePartId: partDto.sparePartId,
-              quantity: partDto.quantity,
-            },
-            tx,
-            'PROPOSED'
+        if (sr.statusService === 'DONE' || sr.statusService === 'CANCEL') {
+          throw new BadRequestException(
+            `Tiket ${ticketNumber} sudah ${sr.statusService} dan tidak dapat diubah.`
           );
         }
+
+        this.stateMachine.validate(
+          sr.statusService as SrStatusType,
+          dto.newStatus
+        );
+
+        if (dto.problemDescription?.trim()) {
+          await tx
+            .update(serviceRequests)
+            .set({ problemDescription: dto.problemDescription.trim() })
+            .where(eq(serviceRequests.ticketNumber, ticketNumber));
+        }
+
+        if (dto.parts && dto.parts.length > 0) {
+          for (const partDto of dto.parts) {
+            await this.orderPartsService.addPart(
+              {
+                serviceRequestId: sr.id,
+                sparePartId: partDto.sparePartId,
+                quantity: partDto.quantity,
+              },
+              tx,
+              'PROPOSED'
+            );
+          }
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        await tx
+          .update(serviceRequests)
+          .set({
+            statusService: dto.newStatus,
+            ...(dto.newStatus === 'CHECK' && !sr.checkDate
+              ? { checkDate: today }
+              : {}),
+            ...(dto.newStatus === 'WAITING_APPROVE' && !sr.spDate
+              ? { spDate: today }
+              : {}),
+            ...(dto.newStatus === 'SERVICE'
+              ? {
+                  spDate: !sr.spDate ? today : sr.spDate,
+                  approveDate: !sr.approveDate ? today : sr.approveDate,
+                }
+              : {}),
+            ...(dto.newStatus === 'DONE'
+              ? {
+                  readyDate: today,
+                  closeDate: today,
+                }
+              : {}),
+          })
+          .where(eq(serviceRequests.ticketNumber, ticketNumber));
+
+        await this.activityService.addActivity(
+          tx,
+          sr.id,
+          'DIAGNOSIS_UPDATED',
+          `Status → ${dto.newStatus}${dto.parts?.length ? `, ${dto.parts.length} part diusulkan` : ''}`,
+          dto.performedBy ?? null
+        );
+
+        return {
+          success: true,
+          ticketNumber,
+          newStatus: dto.newStatus,
+          partsAdded: dto.parts?.length ?? 0,
+        };
       }
-
-      const today = new Date().toISOString().split('T')[0];
-      await tx
-        .update(serviceRequests)
-        .set({
-          statusService: dto.newStatus,
-          ...(dto.newStatus === 'CHECK' && !sr.checkDate
-            ? { checkDate: today }
-            : {}),
-          ...(dto.newStatus === 'WAITING_APPROVE' && !sr.spDate
-            ? { spDate: today }
-            : {}),
-          ...(dto.newStatus === 'SERVICE'
-            ? {
-                spDate: !sr.spDate ? today : sr.spDate,
-                approveDate: !sr.approveDate ? today : sr.approveDate,
-              }
-            : {}),
-          ...(dto.newStatus === 'DONE'
-            ? {
-                readyDate: today,
-                closeDate: today,
-              }
-            : {}),
-        })
-        .where(eq(serviceRequests.ticketNumber, ticketNumber));
-
-      await this.activityService.addActivity(
-        tx,
-        sr.id,
-        'DIAGNOSIS_UPDATED',
-        `Status → ${dto.newStatus}${dto.parts?.length ? `, ${dto.parts.length} part diusulkan` : ''}`,
-        dto.performedBy ?? null
-      );
-
-      return {
-        success: true,
-        ticketNumber,
-        newStatus: dto.newStatus,
-        partsAdded: dto.parts?.length ?? 0,
-      };
-    });
+    );
 
     if (result.newStatus === 'DONE') {
       try {
         const invoice =
           await this.financeService.generateFromServiceRequest(ticketNumber);
-        (result as any).invoice = invoice;
+        result.invoice = invoice;
       } catch (error) {
         const msg = error instanceof Error ? error.message : 'Unknown error';
         this.logger.warn(`Auto-billing gagal untuk ${ticketNumber}: ${msg}`);
-        (result as any).invoiceWarning =
-          `Invoice gagal dibuat: ${msg}. Buat invoice manual dari tombol BUAT INVOICE.`;
+        result.invoiceWarning = `Invoice gagal dibuat: ${msg}. Buat invoice manual dari tombol BUAT INVOICE.`;
       }
     }
 
@@ -532,7 +547,7 @@ export class ServiceRequestService {
       await tx
         .update(serviceRequests)
         .set({
-          statusService: newStatus as any,
+          statusService: newStatus as StatusServiceType,
           approveDate: new Date().toISOString().split('T')[0],
           ...(allInStock && !sr.spDate
             ? { spDate: new Date().toISOString().split('T')[0] }

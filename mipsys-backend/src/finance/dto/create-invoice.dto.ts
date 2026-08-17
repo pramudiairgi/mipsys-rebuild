@@ -41,11 +41,15 @@ export class CreateInvoiceDto {
 export class QueryInvoiceDto {
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Transform(({ value }: { value: unknown }) =>
+    value === '' ? undefined : (value as string)
+  )
   search?: string;
 
   @IsOptional()
   @IsEnum(InvoiceStatus)
-  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Transform(({ value }: { value: unknown }) =>
+    value === '' ? undefined : (value as InvoiceStatus)
+  )
   status?: InvoiceStatus;
 }

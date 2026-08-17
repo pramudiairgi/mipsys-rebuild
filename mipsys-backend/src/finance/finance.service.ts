@@ -5,7 +5,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { eq, and, desc, sql, like, or, isNull } from 'drizzle-orm';
+import { eq, and, desc, sql, like, or, isNull, SQL } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
 import {
@@ -15,9 +15,12 @@ import {
   financeSettings,
   customers,
 } from '../database/schema';
+import { invoiceStatusEnum } from '../database/schema/enums';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { RecordPaymentDto } from './dto/record-payment.dto';
 import { OrderPartsService } from '../order-parts/order-parts.service';
+
+type InvoiceStatus = (typeof invoiceStatusEnum.enumValues)[number];
 
 @Injectable()
 export class FinanceService {
@@ -29,19 +32,18 @@ export class FinanceService {
   ) {}
 
   async findAll(search?: string, status?: string) {
-    const conditions: any[] = [];
+    const conditions: SQL[] = [];
 
     if (status) {
-      conditions.push(eq(invoices.status, status as any));
+      conditions.push(eq(invoices.status, status as InvoiceStatus));
     }
     if (search) {
-      conditions.push(
-        or(
-          like(invoices.invoiceNumber, `%${search}%`),
-          like(invoices.clientName, `%${search}%`),
-          like(invoices.ticketNumber, `%${search}%`)
-        )
+      const searchCondition = or(
+        like(invoices.invoiceNumber, `%${search}%`),
+        like(invoices.clientName, `%${search}%`),
+        like(invoices.ticketNumber, `%${search}%`)
       );
+      if (searchCondition) conditions.push(searchCondition);
     }
 
     const results = await this.db.query.invoices.findMany({
@@ -54,7 +56,7 @@ export class FinanceService {
 
   async findOne(id: number) {
     const invoice = await this.db.query.invoices.findFirst({
-      where: eq(invoices.id, id) as any,
+      where: eq(invoices.id, id),
       with: {
         payments: {
           orderBy: [desc(paymentHistories.paidAt)],
@@ -68,7 +70,7 @@ export class FinanceService {
 
   async create(dto: CreateInvoiceDto) {
     const sr = await this.db.query.serviceRequests.findFirst({
-      where: eq(serviceRequests.ticketNumber, dto.ticketNumber) as any,
+      where: eq(serviceRequests.ticketNumber, dto.ticketNumber),
     });
     if (!sr)
       throw new NotFoundException(`Tiket ${dto.ticketNumber} tidak ditemukan.`);
@@ -77,7 +79,7 @@ export class FinanceService {
       where: and(
         eq(invoices.serviceRequestId, sr.id),
         isNull(invoices.voidedAt)
-      ) as any,
+      ),
     });
     if (existingActive) {
       throw new BadRequestException(
@@ -115,7 +117,7 @@ export class FinanceService {
 
   async recordPayment(id: number, dto: RecordPaymentDto) {
     const invoice = await this.db.query.invoices.findFirst({
-      where: eq(invoices.id, id) as any,
+      where: eq(invoices.id, id),
     });
     if (!invoice)
       throw new NotFoundException(`Invoice ID ${id} tidak ditemukan.`);
@@ -153,7 +155,7 @@ export class FinanceService {
 
   async voidInvoice(id: number) {
     const invoice = await this.db.query.invoices.findFirst({
-      where: eq(invoices.id, id) as any,
+      where: eq(invoices.id, id),
     });
     if (!invoice)
       throw new NotFoundException(`Invoice ID ${id} tidak ditemukan.`);
@@ -224,7 +226,7 @@ export class FinanceService {
     const sr = result[0];
 
     const existing = await this.db.query.invoices.findFirst({
-      where: eq(invoices.ticketNumber, ticketNumber) as any,
+      where: eq(invoices.ticketNumber, ticketNumber),
     });
     if (existing)
       throw new BadRequestException(
@@ -273,7 +275,7 @@ export class FinanceService {
 
   private async getPpnRate(): Promise<number> {
     const setting = await this.db.query.financeSettings.findFirst({
-      where: eq(financeSettings.key, 'ppn_rate') as any,
+      where: eq(financeSettings.key, 'ppn_rate'),
     });
     return setting ? parseFloat(setting.value) : 11;
   }
@@ -304,7 +306,7 @@ export class FinanceService {
       .where(eq(financeSettings.key, counterKey));
 
     const updated = await this.db.query.financeSettings.findFirst({
-      where: eq(financeSettings.key, counterKey) as any,
+      where: eq(financeSettings.key, counterKey),
     });
     const counter = updated ? parseInt(updated.value, 10) : 1;
 

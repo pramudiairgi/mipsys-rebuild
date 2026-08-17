@@ -24,15 +24,21 @@ export class StandardHttpExceptionFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
-      const exceptionResponse: any = exception.getResponse();
+      const exceptionResponse = exception.getResponse();
 
       // Ekstraksi pesan standar bawaan validasi NestJS / class-validator
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
-      } else if (typeof exceptionResponse.message === 'string') {
-        message = exceptionResponse.message;
-      } else if (Array.isArray(exceptionResponse.message)) {
-        message = exceptionResponse.message; // Array error validasi DTO
+      } else if (
+        typeof exceptionResponse === 'object' &&
+        exceptionResponse !== null
+      ) {
+        const body = exceptionResponse as Record<string, unknown>;
+        if (typeof body.message === 'string') {
+          message = body.message;
+        } else if (Array.isArray(body.message)) {
+          message = body.message; // Array error validasi DTO
+        }
       }
     } else if (exception instanceof Error) {
       // Menangkap error mentah dari database / Drizzle ORM

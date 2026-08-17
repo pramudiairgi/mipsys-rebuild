@@ -3,11 +3,14 @@ import { eq, and, ne, desc } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
 import { orderParts, spareParts } from '../database/schema';
+import { orderPartStatusEnum } from '../database/schema/enums';
 import { CreateOrderPartDto } from './dto/create-order-part.dto';
 
 type DrizzleTx = Parameters<
   Parameters<NodePgDatabase<typeof schema>['transaction']>[0]
 >[0];
+
+type OrderPartStatus = (typeof orderPartStatusEnum.enumValues)[number];
 
 @Injectable()
 export class OrderPartsService {
@@ -55,7 +58,7 @@ export class OrderPartsService {
         partName: part.partName,
         quantity: dto.quantity,
         priceAtAction,
-        status: (status ?? 'IN_STOCK') as any,
+        status: (status ?? 'IN_STOCK') as OrderPartStatus,
       })
       .returning({ id: orderParts.id });
 

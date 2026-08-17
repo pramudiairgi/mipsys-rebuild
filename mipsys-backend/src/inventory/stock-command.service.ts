@@ -78,8 +78,6 @@ export class StockCommandService {
     performedBy: number,
     tx?: DrizzleTx
   ) {
-    const targetDb = tx || this.db;
-
     const exec = async (db: DrizzleTx) => {
       const part = await db.query.spareParts.findFirst({
         where: eq(spareParts.id, sparePartId),

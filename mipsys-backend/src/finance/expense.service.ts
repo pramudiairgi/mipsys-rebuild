@@ -1,9 +1,13 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { eq, desc, and, between, sql } from 'drizzle-orm';
+import { eq, desc, and, between, sql, SQL } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
 import { expenses, purchaseOrders, financeSettings } from '../database/schema';
+import { expenseTypeEnum, expenseCategoryEnum } from '../database/schema/enums';
 import { CreateExpenseDto, UpdateExpenseDto } from './dto/create-expense.dto';
+
+type ExpenseType = (typeof expenseTypeEnum.enumValues)[number];
+type ExpenseCategory = (typeof expenseCategoryEnum.enumValues)[number];
 
 @Injectable()
 export class ExpenseService {
@@ -17,11 +21,13 @@ export class ExpenseService {
     startDate?: string;
     endDate?: string;
   }) {
-    const sqlConditions: any[] = [];
+    const sqlConditions: SQL[] = [];
     if (filters.type)
-      sqlConditions.push(eq(expenses.expenseType, filters.type as any));
+      sqlConditions.push(eq(expenses.expenseType, filters.type as ExpenseType));
     if (filters.category)
-      sqlConditions.push(eq(expenses.category, filters.category as any));
+      sqlConditions.push(
+        eq(expenses.category, filters.category as ExpenseCategory)
+      );
     if (filters.startDate && filters.endDate) {
       sqlConditions.push(
         between(expenses.expenseDate, filters.startDate, filters.endDate)
@@ -30,14 +36,13 @@ export class ExpenseService {
 
     return this.db.query.expenses.findMany({
       orderBy: [desc(expenses.expenseDate)],
-      where:
-        sqlConditions.length > 0 ? (and(...sqlConditions) as any) : undefined,
+      where: sqlConditions.length > 0 ? and(...sqlConditions) : undefined,
     });
   }
 
   async findOne(id: number) {
     const expense = await this.db.query.expenses.findFirst({
-      where: eq(expenses.id, id) as any,
+      where: eq(expenses.id, id),
     });
     if (!expense)
       throw new NotFoundException(`Expense ID ${id} tidak ditemukan.`);
@@ -62,7 +67,7 @@ export class ExpenseService {
 
   async update(id: number, dto: UpdateExpenseDto) {
     await this.findOne(id);
-    const values: any = {};
+    const values: Partial<typeof expenses.$inferInsert> = {};
     if (dto.description !== undefined) values.description = dto.description;
     if (dto.amount !== undefined) values.amount = dto.amount.toString();
     if (dto.expenseDate !== undefined) values.expenseDate = dto.expenseDate;
@@ -79,15 +84,16 @@ export class ExpenseService {
 
   async syncFromPo(poId?: number) {
     const where = poId
-      ? (eq(purchaseOrders.id, poId) as any)
-      : eq(purchaseOrders.status, 'RECEIVED' as any);
+      ? eq(purchaseOrders.id, poId)
+      : eq(purchaseOrders.status, 'RECEIVED');
 
     const receivedPOs = await this.db.query.purchaseOrders.findMany({ where });
 
-    const results: any[] = [];
+    const results: { id: number; expenseNumber: string; poNumber: string }[] =
+      [];
     for (const po of receivedPOs) {
       const existing = await this.db.query.expenses.findFirst({
-        where: eq(expenses.poId, po.id) as any,
+        where: eq(expenses.poId, po.id),
       });
       if (existing) continue;
 
@@ -136,7 +142,7 @@ export class ExpenseService {
       .where(eq(financeSettings.key, counterKey));
 
     const updated = await this.db.query.financeSettings.findFirst({
-      where: eq(financeSettings.key, counterKey) as any,
+      where: eq(financeSettings.key, counterKey),
     });
     const counter = updated ? parseInt(updated.value, 10) : 1;
 

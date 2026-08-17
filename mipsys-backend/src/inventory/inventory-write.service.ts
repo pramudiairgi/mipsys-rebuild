@@ -54,10 +54,17 @@ export class InventoryWriteService {
         stock: dto.stock ?? 0,
         price: dto.price.toString(),
       })
-      .returning();
+      .returning({
+        id: spareParts.id,
+        partCode: spareParts.partCode,
+        partName: spareParts.partName,
+        modelName: spareParts.modelName,
+        block: spareParts.block,
+        stock: spareParts.stock,
+        price: spareParts.price,
+      });
 
-    const { createdAt, updatedAt, ...sparePart } = created;
-    return sparePart;
+    return created;
   }
 
   async update(id: number, dto: UpdateSparePartDto) {

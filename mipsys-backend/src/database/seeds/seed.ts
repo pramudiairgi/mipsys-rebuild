@@ -998,4 +998,7 @@ async function runSeeder() {
   await pool.end();
 }
 
-runSeeder();
+runSeeder().catch((error) => {
+  console.error('Seeder gagal:', error);
+  process.exit(1);
+});
