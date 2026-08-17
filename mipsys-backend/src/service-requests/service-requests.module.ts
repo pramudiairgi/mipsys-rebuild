@@ -14,7 +14,13 @@ import { ServiceRequestStateMachine } from './services/state-machine.service';
 import { ServiceRequestListener } from './listeners/service-request.listener';
 
 @Module({
-  imports: [DatabaseModule, StockMovementsModule, InventoryModule, OrderPartsModule, FinanceModule],
+  imports: [
+    DatabaseModule,
+    StockMovementsModule,
+    InventoryModule,
+    OrderPartsModule,
+    FinanceModule,
+  ],
   controllers: [ServiceRequestsController],
   providers: [
     ServiceRequestService,

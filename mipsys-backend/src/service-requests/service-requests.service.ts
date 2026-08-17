@@ -264,7 +264,7 @@ export class ServiceRequestService {
 
       this.stateMachine.validate(
         sr.statusService as SrStatusType,
-        dto.newStatus as SrStatusType
+        dto.newStatus
       );
 
       if (dto.problemDescription?.trim()) {
@@ -417,15 +417,12 @@ export class ServiceRequestService {
         );
       }
 
-      this.stateMachine.validate(
-        sr.statusService as SrStatusType,
-        'CANCEL' as SrStatusType
-      );
+      this.stateMachine.validate(sr.statusService, 'CANCEL');
 
       await tx
         .update(serviceRequests)
         .set({
-          statusService: 'CANCEL' as any,
+          statusService: 'CANCEL',
           updatedAt: new Date(),
         })
         .where(eq(serviceRequests.ticketNumber, ticketNumber));
@@ -526,10 +523,7 @@ export class ServiceRequestService {
         newStatus = 'AWAITING_PARTS';
       }
 
-      this.stateMachine.validate(
-        sr.statusService as SrStatusType,
-        newStatus as SrStatusType
-      );
+      this.stateMachine.validate(sr.statusService, newStatus as SrStatusType);
 
       const totalPartFee = parts.reduce((sum, p) => {
         return sum + parseFloat(p.priceAtAction || '0') * p.quantity;
@@ -637,15 +631,12 @@ export class ServiceRequestService {
           .where(eq(orderParts.id, op.id));
       }
 
-      this.stateMachine.validate(
-        sr.statusService as SrStatusType,
-        'SERVICE' as SrStatusType
-      );
+      this.stateMachine.validate(sr.statusService, 'SERVICE');
 
       await tx
         .update(serviceRequests)
         .set({
-          statusService: 'SERVICE' as any,
+          statusService: 'SERVICE',
           spDate: new Date().toISOString().split('T')[0],
           updatedAt: new Date(),
         })
@@ -683,17 +674,14 @@ export class ServiceRequestService {
         );
       }
 
-      this.stateMachine.validate(
-        sr.statusService as SrStatusType,
-        'CLOSED' as SrStatusType
-      );
+      this.stateMachine.validate(sr.statusService, 'CLOSED');
 
       const today = new Date().toISOString().split('T')[0];
 
       await tx
         .update(serviceRequests)
         .set({
-          statusService: 'CLOSED' as any,
+          statusService: 'CLOSED',
           statusSystem: 'CLOSED',
           closeDate: today,
           pickUpDate: today,

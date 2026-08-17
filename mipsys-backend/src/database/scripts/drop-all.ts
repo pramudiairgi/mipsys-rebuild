@@ -11,11 +11,22 @@ async function dropAll() {
   });
 
   const tables = [
-    'stock_movements', 'payment_histories', 'order_parts',
-    'po_items', 'service_logs', 'expenses', 'invoices',
-    'purchase_orders', 'service_requests', 'spare_parts',
-    'products', 'customers', 'staff', 'users',
-    'finance_settings', 'category_models',
+    'stock_movements',
+    'payment_histories',
+    'order_parts',
+    'po_items',
+    'service_logs',
+    'expenses',
+    'invoices',
+    'purchase_orders',
+    'service_requests',
+    'spare_parts',
+    'products',
+    'customers',
+    'staff',
+    'users',
+    'finance_settings',
+    'category_models',
   ];
 
   for (const table of tables) {
@@ -23,9 +34,16 @@ async function dropAll() {
   }
 
   const enumTypes = [
-    'service_status', 'po_status', 'user_role', 'service_type',
-    'staff_role', 'movement_type', 'invoice_status',
-    'payment_method', 'expense_type', 'expense_category',
+    'service_status',
+    'po_status',
+    'user_role',
+    'service_type',
+    'staff_role',
+    'movement_type',
+    'invoice_status',
+    'payment_method',
+    'expense_type',
+    'expense_category',
     'order_part_status',
   ];
 

@@ -8,16 +8,13 @@ export class ReportController {
   @Get('reports/profit-loss')
   async profitLoss(
     @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
+    @Query('endDate') endDate: string
   ) {
     return this.reportService.getProfitLoss(startDate, endDate);
   }
 
   @Get('reports/tax/ppn')
-  async ppnReport(
-    @Query('year') year: number,
-    @Query('month') month: number,
-  ) {
+  async ppnReport(@Query('year') year: number, @Query('month') month: number) {
     return this.reportService.getPpnReport(year, month);
   }
 

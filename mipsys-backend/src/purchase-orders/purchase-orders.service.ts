@@ -34,7 +34,7 @@ export class PurchaseOrdersService {
     @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>,
     private stockMovementsService: StockMovementsService,
     private poItemsService: PoItemsService,
-    private eventEmitter: EventEmitter2,
+    private eventEmitter: EventEmitter2
   ) {}
 
   validateTransition(current: PoStatusType, next: PoStatusType) {
@@ -56,7 +56,11 @@ export class PurchaseOrdersService {
       if (!item.partName && item.sparePartId) {
         const sp = partsMap.get(item.sparePartId);
         if (sp) {
-          return { ...item, partName: sp.partName, modelName: item.modelName || sp.modelName };
+          return {
+            ...item,
+            partName: sp.partName,
+            modelName: item.modelName || sp.modelName,
+          };
         }
       }
       return item;
@@ -79,7 +83,7 @@ export class PurchaseOrdersService {
 
     const itemsByPoId: Map<number, typeof allItems> = new Map();
     for (const item of allItems) {
-      const key = item.purchaseOrderId!;
+      const key = item.purchaseOrderId;
       if (!itemsByPoId.has(key)) itemsByPoId.set(key, []);
       itemsByPoId.get(key)!.push(item);
     }
@@ -132,14 +136,17 @@ export class PurchaseOrdersService {
         totalAmount += item.quantity * item.unitPrice;
       }
 
-      const [poResult] = await tx.insert(purchaseOrders).values({
-        poNumber,
-        supplierName: dto.supplierName || 'EPSON',
-        status: 'DRAFT',
-        requestedBy: dto.requestedBy,
-        notes: dto.notes?.trim() ?? null,
-        totalAmount: totalAmount.toString(),
-      }).returning({ id: purchaseOrders.id });
+      const [poResult] = await tx
+        .insert(purchaseOrders)
+        .values({
+          poNumber,
+          supplierName: dto.supplierName || 'EPSON',
+          status: 'DRAFT',
+          requestedBy: dto.requestedBy,
+          notes: dto.notes?.trim() ?? null,
+          totalAmount: totalAmount.toString(),
+        })
+        .returning({ id: purchaseOrders.id });
 
       await this.poItemsService.addItems(tx, poResult.id, dto.items);
 
@@ -179,17 +186,26 @@ export class PurchaseOrdersService {
     });
   }
 
-  async updateStatus(id: number, newStatus: PoStatusType, performedBy?: number) {
+  async updateStatus(
+    id: number,
+    newStatus: PoStatusType,
+    performedBy?: number
+  ) {
     const po = await this.findOne(id);
     const currentStatus = po.status as PoStatusType;
 
     this.validateTransition(currentStatus, newStatus);
 
-    const updates: Record<string, unknown> = { status: newStatus, updatedAt: new Date() };
+    const updates: Record<string, unknown> = {
+      status: newStatus,
+      updatedAt: new Date(),
+    };
 
     if (newStatus === 'APPROVED') updates.approvedBy = performedBy;
-    if (newStatus === 'ORDERED') updates.orderDate = new Date().toISOString().split('T')[0];
-    if (newStatus === 'RECEIVED') updates.receivedDate = new Date().toISOString().split('T')[0];
+    if (newStatus === 'ORDERED')
+      updates.orderDate = new Date().toISOString().split('T')[0];
+    if (newStatus === 'RECEIVED')
+      updates.receivedDate = new Date().toISOString().split('T')[0];
 
     await this.db
       .update(purchaseOrders)
@@ -200,7 +216,7 @@ export class PurchaseOrdersService {
   }
 
   async receivePO(id: number, dto: ReceivePoDto) {
-    let receivedSparePartIds: number[] = [];
+    const receivedSparePartIds: number[] = [];
 
     const result = await this.db.transaction(async (tx) => {
       const po = await tx.query.purchaseOrders.findFirst({
@@ -219,7 +235,10 @@ export class PurchaseOrdersService {
 
       for (const receiveItem of dto.items) {
         const poItem = items.find((i) => i.id === receiveItem.poItemId);
-        if (!poItem) throw new BadRequestException(`Item ID ${receiveItem.poItemId} tidak ditemukan.`);
+        if (!poItem)
+          throw new BadRequestException(
+            `Item ID ${receiveItem.poItemId} tidak ditemukan.`
+          );
 
         let sparePartId = poItem.sparePartId!;
 
@@ -242,13 +261,16 @@ export class PurchaseOrdersService {
               .set({ sparePartId, partName })
               .where(eq(poItems.id, poItem.id));
           } else {
-            const [newPart] = await tx.insert(spareParts).values({
-              partName,
-              modelName: poItem.modelName || null,
-              stock: 0,
-              minStock: 5,
-              price: poItem.unitPrice,
-            }).returning({ id: spareParts.id });
+            const [newPart] = await tx
+              .insert(spareParts)
+              .values({
+                partName,
+                modelName: poItem.modelName || null,
+                stock: 0,
+                minStock: 5,
+                price: poItem.unitPrice,
+              })
+              .returning({ id: spareParts.id });
             sparePartId = newPart.id;
 
             await tx
@@ -272,7 +294,11 @@ export class PurchaseOrdersService {
           );
         }
 
-        await this.poItemsService.updateReceivedQty(tx, poItem.id, receiveItem.receivedQty);
+        await this.poItemsService.updateReceivedQty(
+          tx,
+          poItem.id,
+          receiveItem.receivedQty
+        );
 
         await this.stockMovementsService.createMovement(
           {
@@ -286,7 +312,12 @@ export class PurchaseOrdersService {
           tx
         );
 
-        await this.stockMovementsService.updateStock(tx, sparePartId, receiveItem.receivedQty, 'PO_RECEIVE');
+        await this.stockMovementsService.updateStock(
+          tx,
+          sparePartId,
+          receiveItem.receivedQty,
+          'PO_RECEIVE'
+        );
 
         await tx
           .update(spareParts)
@@ -309,12 +340,19 @@ export class PurchaseOrdersService {
         .update(purchaseOrders)
         .set({
           status: finalStatus,
-          receivedDate: finalStatus === 'RECEIVED' ? new Date().toISOString().split('T')[0] : po.receivedDate,
+          receivedDate:
+            finalStatus === 'RECEIVED'
+              ? new Date().toISOString().split('T')[0]
+              : po.receivedDate,
           updatedAt: new Date(),
         })
         .where(eq(purchaseOrders.id, id));
 
-      return { success: true, status: finalStatus, message: `PO #${id} → ${finalStatus}` };
+      return {
+        success: true,
+        status: finalStatus,
+        message: `PO #${id} → ${finalStatus}`,
+      };
     });
 
     if (receivedSparePartIds.length > 0) {
@@ -334,13 +372,22 @@ export class PurchaseOrdersService {
 
     await this.db
       .insert(financeSettings)
-      .values({ key: counterKey, value: '0', description: `PO counter for ${dateStr}` })
-      .onConflictDoUpdate({ target: financeSettings.key, set: { value: sql`EXCLUDED.value` } });
+      .values({
+        key: counterKey,
+        value: '0',
+        description: `PO counter for ${dateStr}`,
+      })
+      .onConflictDoUpdate({
+        target: financeSettings.key,
+        set: { value: sql`EXCLUDED.value` },
+      });
 
     await this.db
       .update(financeSettings)
-      .set({ value: sql`CAST(CAST(${financeSettings.value} AS INTEGER) + 1 AS TEXT)` })
-      .where(eq(financeSettings.key, counterKey) as any);
+      .set({
+        value: sql`CAST(CAST(${financeSettings.value} AS INTEGER) + 1 AS TEXT)`,
+      })
+      .where(eq(financeSettings.key, counterKey));
 
     const updated = await this.db.query.financeSettings.findFirst({
       where: eq(financeSettings.key, counterKey) as any,

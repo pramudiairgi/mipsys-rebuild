@@ -18,12 +18,7 @@ import { SettingsService } from './settings.service';
     ReportController,
     SettingsController,
   ],
-  providers: [
-    FinanceService,
-    ExpenseService,
-    ReportService,
-    SettingsService,
-  ],
+  providers: [FinanceService, ExpenseService, ReportService, SettingsService],
   exports: [FinanceService],
 })
 export class FinanceModule {}

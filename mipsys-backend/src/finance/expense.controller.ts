@@ -1,6 +1,15 @@
 import {
-  Controller, Get, Post, Patch, Delete, Body, Param, Query,
-  ParseIntPipe, HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  ParseIntPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ExpenseService } from './expense.service';
 import { CreateExpenseDto, UpdateExpenseDto } from './dto/create-expense.dto';
@@ -14,7 +23,7 @@ export class ExpenseController {
     @Query('type') type?: string,
     @Query('category') category?: string,
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('endDate') endDate?: string
   ) {
     return this.expenseService.findAll({ type, category, startDate, endDate });
   }
@@ -31,7 +40,10 @@ export class ExpenseController {
   }
 
   @Patch(':id')
-  async update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateExpenseDto) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateExpenseDto
+  ) {
     return this.expenseService.update(id, dto);
   }
 

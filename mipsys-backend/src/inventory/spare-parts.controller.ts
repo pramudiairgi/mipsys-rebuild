@@ -21,14 +21,14 @@ export class SparePartsController {
   constructor(
     private readonly readService: InventoryReadService,
     private readonly writeService: InventoryWriteService,
-    private readonly stockCommand: StockCommandService,
+    private readonly stockCommand: StockCommandService
   ) {}
 
   @Get()
   async findAll(
     @Query('search') search?: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit?: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit?: number
   ) {
     return await this.readService.getAll({ search, page, limit });
   }
@@ -46,7 +46,7 @@ export class SparePartsController {
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateSparePartDto,
+    @Body() dto: UpdateSparePartDto
   ) {
     return await this.writeService.update(id, dto);
   }
@@ -54,7 +54,7 @@ export class SparePartsController {
   @Patch(':id/add-stock')
   async addStock(
     @Param('id', ParseIntPipe) id: number,
-    @Body('quantity', ParseIntPipe) qty: number,
+    @Body('quantity', ParseIntPipe) qty: number
   ) {
     return await this.stockCommand.addStock(id, qty);
   }
@@ -62,7 +62,7 @@ export class SparePartsController {
   @Patch(':id/reduce-stock')
   async reduceStock(
     @Param('id', ParseIntPipe) id: number,
-    @Body('quantity', ParseIntPipe) qty: number,
+    @Body('quantity', ParseIntPipe) qty: number
   ) {
     return await this.stockCommand.reduceStock(id, qty);
   }

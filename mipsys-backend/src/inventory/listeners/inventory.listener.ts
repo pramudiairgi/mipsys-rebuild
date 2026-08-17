@@ -3,7 +3,12 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { eq, sql } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../../database/schema';
-import { spareParts, purchaseOrders, poItems, financeSettings } from '../../database/schema';
+import {
+  spareParts,
+  purchaseOrders,
+  poItems,
+  financeSettings,
+} from '../../database/schema';
 
 export interface StockLevelChangedEvent {
   sparePartId: number;
@@ -15,7 +20,7 @@ export class InventoryListener {
   private readonly logger = new Logger(InventoryListener.name);
 
   constructor(
-    @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>,
+    @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>
   ) {}
 
   @OnEvent('stock.level-changed')
@@ -37,25 +42,31 @@ export class InventoryListener {
       const poNumber = await this.generateAutoPoNumber();
 
       await this.db.transaction(async (tx) => {
-        const [poResult] = await tx.insert(purchaseOrders).values({
-          poNumber,
-          supplierName: 'EPSON',
-          status: 'REQUESTED',
-          requestedBy: 1,
-          notes: `Auto-PO: ${part!.partName} stok menipis (${newStock} < ${part!.minStock})`,
-          totalAmount: '0.00',
-        }).returning({ id: purchaseOrders.id });
+        const [poResult] = await tx
+          .insert(purchaseOrders)
+          .values({
+            poNumber,
+            supplierName: 'EPSON',
+            status: 'REQUESTED',
+            requestedBy: 1,
+            notes: `Auto-PO: ${part.partName} stok menipis (${newStock} < ${part.minStock})`,
+            totalAmount: '0.00',
+          })
+          .returning({ id: purchaseOrders.id });
 
         await tx.insert(poItems).values({
           purchaseOrderId: poResult.id,
-          sparePartId: part!.id,
+          sparePartId: part.id,
           quantity: reorderQty,
           unitPrice: '0.00',
           receivedQty: 0,
         });
       });
     } catch (error) {
-      this.logger.error(`[AUTO_PO] Gagal membuat PO otomatis untuk part #${sparePartId}:`, error);
+      this.logger.error(
+        `[AUTO_PO] Gagal membuat PO otomatis untuk part #${sparePartId}:`,
+        error
+      );
     }
   }
 
@@ -65,13 +76,22 @@ export class InventoryListener {
 
     await this.db
       .insert(financeSettings)
-      .values({ key: counterKey, value: '0', description: `PO counter for ${dateStr}` })
-      .onConflictDoUpdate({ target: financeSettings.key, set: { value: sql`EXCLUDED.value` } });
+      .values({
+        key: counterKey,
+        value: '0',
+        description: `PO counter for ${dateStr}`,
+      })
+      .onConflictDoUpdate({
+        target: financeSettings.key,
+        set: { value: sql`EXCLUDED.value` },
+      });
 
     await this.db
       .update(financeSettings)
-      .set({ value: sql`CAST(CAST(${financeSettings.value} AS INTEGER) + 1 AS TEXT)` })
-      .where(eq(financeSettings.key, counterKey) as any);
+      .set({
+        value: sql`CAST(CAST(${financeSettings.value} AS INTEGER) + 1 AS TEXT)`,
+      })
+      .where(eq(financeSettings.key, counterKey));
 
     const updated = await this.db.query.financeSettings.findFirst({
       where: eq(financeSettings.key, counterKey) as any,

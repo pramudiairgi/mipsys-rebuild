@@ -26,7 +26,7 @@ export class ServiceRequestsController {
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
-    @Query('status') status?: string,
+    @Query('status') status?: string
   ) {
     return await this.serviceRequestService.findAll({
       search,
@@ -55,7 +55,7 @@ export class ServiceRequestsController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createDto: CreateServiceRequestDto,
-    @CurrentStaffId() staffId: number,
+    @CurrentStaffId() staffId: number
   ) {
     return await this.serviceRequestService.createEntry(createDto, staffId);
   }
@@ -112,7 +112,7 @@ export class ServiceRequestsController {
   @HttpCode(HttpStatus.OK)
   async closeTicket(
     @Param('ticketNumber') ticketNumber: string,
-    @Body() dto: { performedBy?: number },
+    @Body() dto: { performedBy?: number }
   ) {
     return this.serviceRequestService.closeTicket(ticketNumber, dto);
   }

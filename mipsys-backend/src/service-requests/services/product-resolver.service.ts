@@ -14,7 +14,7 @@ export class ServiceRequestProductResolver {
   async resolveProductId(
     tx: DrizzleTx,
     serialNumber: string,
-    modelName: string,
+    modelName: string
   ): Promise<number> {
     const [existing] = await tx
       .select({ id: products.id })
@@ -24,10 +24,13 @@ export class ServiceRequestProductResolver {
 
     if (existing) return existing.id;
 
-    const [{ id }] = await tx.insert(products).values({
-      serialNumber: serialNumber.trim(),
-      modelName: modelName.trim(),
-    }).returning({ id: products.id });
+    const [{ id }] = await tx
+      .insert(products)
+      .values({
+        serialNumber: serialNumber.trim(),
+        modelName: modelName.trim(),
+      })
+      .returning({ id: products.id });
     return id;
   }
 

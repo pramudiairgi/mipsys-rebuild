@@ -38,7 +38,7 @@ export class FinanceController {
   @HttpCode(HttpStatus.CREATED)
   async recordPayment(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: RecordPaymentDto,
+    @Body() dto: RecordPaymentDto
   ) {
     return this.financeService.recordPayment(id, dto);
   }

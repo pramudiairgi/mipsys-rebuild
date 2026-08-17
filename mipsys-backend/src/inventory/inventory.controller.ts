@@ -17,13 +17,13 @@ export class InventoryController {
   constructor(
     private readonly readService: InventoryReadService,
     private readonly stockCommand: StockCommandService,
-    private readonly stockMovementsService: StockMovementsService,
+    private readonly stockMovementsService: StockMovementsService
   ) {}
 
   @Get('parts')
   async getParts(
     @Query('search') search?: string,
-    @Query('status') status?: 'ok' | 'low' | 'empty',
+    @Query('status') status?: 'ok' | 'low' | 'empty'
   ) {
     return this.readService.getParts({ search, status });
   }
@@ -46,13 +46,13 @@ export class InventoryController {
   @Post('parts/:id/reserve')
   async reserveStock(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: ReserveStockDto,
+    @Body() dto: ReserveStockDto
   ) {
     return this.stockCommand.reserveStock(
       id,
       dto.quantity,
       dto.srTicketNumber,
-      dto.performedBy,
+      dto.performedBy
     );
   }
 

@@ -1,4 +1,8 @@
-import { validatePoTransition, PoStatusType, VALID_PO_TRANSITIONS } from '../src/purchase-orders/po-state-machine.guard';
+import {
+  validatePoTransition,
+  PoStatusType,
+  VALID_PO_TRANSITIONS,
+} from '../src/purchase-orders/po-state-machine.guard';
 import { BadRequestException } from '@nestjs/common';
 
 describe('PO State Machine', () => {
@@ -12,11 +16,15 @@ describe('PO State Machine', () => {
     });
 
     it('should allow SHIPPED → PARTIALLY_RECEIVED', () => {
-      expect(() => validatePoTransition('SHIPPED', 'PARTIALLY_RECEIVED')).not.toThrow();
+      expect(() =>
+        validatePoTransition('SHIPPED', 'PARTIALLY_RECEIVED')
+      ).not.toThrow();
     });
 
     it('should allow PARTIALLY_RECEIVED → RECEIVED', () => {
-      expect(() => validatePoTransition('PARTIALLY_RECEIVED', 'RECEIVED')).not.toThrow();
+      expect(() =>
+        validatePoTransition('PARTIALLY_RECEIVED', 'RECEIVED')
+      ).not.toThrow();
     });
 
     it('should allow DRAFT → CANCELLED', () => {
@@ -24,7 +32,9 @@ describe('PO State Machine', () => {
     });
 
     it('should allow REQUESTED → CANCELLED', () => {
-      expect(() => validatePoTransition('REQUESTED', 'CANCELLED')).not.toThrow();
+      expect(() =>
+        validatePoTransition('REQUESTED', 'CANCELLED')
+      ).not.toThrow();
     });
 
     it('should allow APPROVED → ORDERED', () => {
@@ -40,37 +50,53 @@ describe('PO State Machine', () => {
     });
 
     it('should allow PARTIALLY_RECEIVED → PARTIALLY_RECEIVED (additional partial receive)', () => {
-      expect(() => validatePoTransition('PARTIALLY_RECEIVED', 'PARTIALLY_RECEIVED')).not.toThrow();
+      expect(() =>
+        validatePoTransition('PARTIALLY_RECEIVED', 'PARTIALLY_RECEIVED')
+      ).not.toThrow();
     });
   });
 
   describe('invalid transitions', () => {
     it('should reject DRAFT → RECEIVED (skip all steps)', () => {
-      expect(() => validatePoTransition('DRAFT', 'RECEIVED')).toThrow(BadRequestException);
+      expect(() => validatePoTransition('DRAFT', 'RECEIVED')).toThrow(
+        BadRequestException
+      );
     });
 
     it('should reject REQUESTED → RECEIVED (skip approval)', () => {
-      expect(() => validatePoTransition('REQUESTED', 'RECEIVED')).toThrow(BadRequestException);
+      expect(() => validatePoTransition('REQUESTED', 'RECEIVED')).toThrow(
+        BadRequestException
+      );
     });
 
     it('should reject RECEIVED → ORDERED (terminal state)', () => {
-      expect(() => validatePoTransition('RECEIVED', 'ORDERED')).toThrow(BadRequestException);
+      expect(() => validatePoTransition('RECEIVED', 'ORDERED')).toThrow(
+        BadRequestException
+      );
     });
 
     it('should reject CANCELLED → REQUESTED (terminal state)', () => {
-      expect(() => validatePoTransition('CANCELLED', 'REQUESTED')).toThrow(BadRequestException);
+      expect(() => validatePoTransition('CANCELLED', 'REQUESTED')).toThrow(
+        BadRequestException
+      );
     });
 
     it('should reject RECEIVED → CANCELLED (already received)', () => {
-      expect(() => validatePoTransition('RECEIVED', 'CANCELLED')).toThrow(BadRequestException);
+      expect(() => validatePoTransition('RECEIVED', 'CANCELLED')).toThrow(
+        BadRequestException
+      );
     });
 
     it('should reject APPROVED → SHIPPED (skip ORDERED)', () => {
-      expect(() => validatePoTransition('APPROVED', 'SHIPPED')).toThrow(BadRequestException);
+      expect(() => validatePoTransition('APPROVED', 'SHIPPED')).toThrow(
+        BadRequestException
+      );
     });
 
     it('should reject DRAFT → APPROVED (skip REQUESTED)', () => {
-      expect(() => validatePoTransition('DRAFT', 'APPROVED')).toThrow(BadRequestException);
+      expect(() => validatePoTransition('DRAFT', 'APPROVED')).toThrow(
+        BadRequestException
+      );
     });
   });
 

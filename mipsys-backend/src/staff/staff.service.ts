@@ -17,17 +17,25 @@ export class StaffService {
   }
 
   async findOne(id: number) {
-    const row = await this.db.query.staff.findFirst({ where: eq(staff.id, id) });
+    const row = await this.db.query.staff.findFirst({
+      where: eq(staff.id, id),
+    });
     if (!row) throw new NotFoundException(`Staff ID ${id} tidak ditemukan.`);
     return row;
   }
 
   async create(data: { name: string; role: 'ADMIN' | 'TECHNICIAN' }) {
-    const [result] = await this.db.insert(staff).values(data).returning({ id: staff.id });
+    const [result] = await this.db
+      .insert(staff)
+      .values(data)
+      .returning({ id: staff.id });
     return { success: true, id: result.id };
   }
 
-  async update(id: number, data: { name?: string; role?: 'ADMIN' | 'TECHNICIAN' }) {
+  async update(
+    id: number,
+    data: { name?: string; role?: 'ADMIN' | 'TECHNICIAN' }
+  ) {
     await this.findOne(id);
     await this.db.update(staff).set(data).where(eq(staff.id, id));
     return { success: true, id };

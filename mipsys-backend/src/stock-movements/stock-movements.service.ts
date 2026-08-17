@@ -9,7 +9,10 @@ import { eq, desc } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
 import { stockMovements, spareParts } from '../database/schema';
-import { CreateStockMovementDto, MovementTypeType } from './dto/create-stock-movement.dto';
+import {
+  CreateStockMovementDto,
+  MovementTypeType,
+} from './dto/create-stock-movement.dto';
 
 type DrizzleTx = Parameters<
   Parameters<NodePgDatabase<typeof schema>['transaction']>[0]
@@ -77,7 +80,10 @@ export class StockMovementsService {
 
     const newStock = current.stock + quantity;
 
-    if (newStock < 0 && (movementType === 'SERVICE_USE' || movementType === 'ADJUSTMENT')) {
+    if (
+      newStock < 0 &&
+      (movementType === 'SERVICE_USE' || movementType === 'ADJUSTMENT')
+    ) {
       throw new BadRequestException(
         `Stok tidak mencukupi. Tersedia: ${current.stock}, dibutuhkan: ${Math.abs(quantity)}`
       );

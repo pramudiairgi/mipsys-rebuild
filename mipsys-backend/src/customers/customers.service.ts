@@ -17,7 +17,7 @@ export class CustomersService {
       where: search
         ? or(
             like(customers.name, `%${search}%`),
-            like(customers.phone, `%${search}%`),
+            like(customers.phone, `%${search}%`)
           )
         : undefined,
       orderBy: [customers.name],
@@ -32,17 +32,33 @@ export class CustomersService {
     return row;
   }
 
-  async create(data: { name: string; phone?: string; address?: string; customerType?: string }) {
-    const [result] = await this.db.insert(customers).values({
-      name: data.name.trim(),
-      phone: data.phone?.trim() || null,
-      address: data.address?.trim() || null,
-      customerType: data.customerType?.trim() || null,
-    }).returning({ id: customers.id });
+  async create(data: {
+    name: string;
+    phone?: string;
+    address?: string;
+    customerType?: string;
+  }) {
+    const [result] = await this.db
+      .insert(customers)
+      .values({
+        name: data.name.trim(),
+        phone: data.phone?.trim() || null,
+        address: data.address?.trim() || null,
+        customerType: data.customerType?.trim() || null,
+      })
+      .returning({ id: customers.id });
     return { success: true, id: result.id };
   }
 
-  async update(id: number, data: { name?: string; phone?: string; address?: string; customerType?: string }) {
+  async update(
+    id: number,
+    data: {
+      name?: string;
+      phone?: string;
+      address?: string;
+      customerType?: string;
+    }
+  ) {
     await this.findOne(id);
     await this.db.update(customers).set(data).where(eq(customers.id, id));
     return { success: true, id };

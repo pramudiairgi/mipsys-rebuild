@@ -16,7 +16,9 @@ const mockDb = {
   select: jest.fn().mockReturnValue({
     from: jest.fn().mockReturnValue({
       where: jest.fn().mockReturnValue({
-        limit: jest.fn().mockImplementation(() => Promise.resolve(mockStockRows)),
+        limit: jest
+          .fn()
+          .mockImplementation(() => Promise.resolve(mockStockRows)),
       }),
       orderBy: jest.fn().mockResolvedValue([]),
     }),
@@ -127,7 +129,12 @@ describe('StockMovementsService', () => {
   describe('getMovementsByPart', () => {
     it('should return movements for a given part', async () => {
       mockDb.query.stockMovements.findMany.mockResolvedValue([
-        { id: 1, quantity: 10, movementType: 'PO_RECEIVE', referenceId: 'PO-001' },
+        {
+          id: 1,
+          quantity: 10,
+          movementType: 'PO_RECEIVE',
+          referenceId: 'PO-001',
+        },
       ]);
 
       const result = await service.getMovementsByPart(1);

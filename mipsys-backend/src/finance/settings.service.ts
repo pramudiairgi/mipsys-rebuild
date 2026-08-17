@@ -7,7 +7,7 @@ import { financeSettings } from '../database/schema';
 @Injectable()
 export class SettingsService {
   constructor(
-    @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>,
+    @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>
   ) {}
 
   async getAll(): Promise<Record<string, string>> {

@@ -9,7 +9,7 @@ export class InventoryReadService {
   private readonly logger = new Logger(InventoryReadService.name);
 
   constructor(
-    @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>,
+    @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>
   ) {}
 
   async getModels(): Promise<string[]> {
@@ -25,7 +25,7 @@ export class InventoryReadService {
     return this.db.query.spareParts.findMany({
       where: or(
         ilike(spareParts.partName, pattern),
-        ilike(spareParts.partCode, pattern),
+        ilike(spareParts.partCode, pattern)
       ),
       orderBy: [desc(spareParts.stock)],
       limit: 50,
@@ -43,8 +43,8 @@ export class InventoryReadService {
       conditions.push(
         or(
           like(spareParts.partName, pattern),
-          like(spareParts.partCode, pattern),
-        ) as any,
+          like(spareParts.partCode, pattern)
+        ) as any
       );
     }
 
@@ -66,11 +66,19 @@ export class InventoryReadService {
     const total = Number(count);
     return {
       data,
-      meta: { total, page, limit, totalPages: total > 0 ? Math.ceil(total / limit) : 0 },
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: total > 0 ? Math.ceil(total / limit) : 0,
+      },
     };
   }
 
-  async getParts(filters?: { status?: 'ok' | 'low' | 'empty'; search?: string }) {
+  async getParts(filters?: {
+    status?: 'ok' | 'low' | 'empty';
+    search?: string;
+  }) {
     const conditions: ReturnType<typeof sql>[] = [];
 
     if (filters?.search) {
@@ -78,8 +86,8 @@ export class InventoryReadService {
       conditions.push(
         or(
           like(spareParts.partName, pattern),
-          like(spareParts.partCode, pattern),
-        ) as any,
+          like(spareParts.partCode, pattern)
+        ) as any
       );
     }
 
@@ -89,11 +97,11 @@ export class InventoryReadService {
       conditions.push(
         and(
           gt(spareParts.stock, 0),
-          sql`${spareParts.stock} < ${spareParts.minStock}`,
-        ) as any,
+          sql`${spareParts.stock} < ${spareParts.minStock}`
+        ) as any
       );
     } else if (filters?.status === 'empty') {
-      conditions.push(eq(spareParts.stock, 0) as any);
+      conditions.push(eq(spareParts.stock, 0));
     }
 
     return this.db.query.spareParts.findMany({
@@ -119,10 +127,10 @@ export class InventoryReadService {
 
   async findByPartNameAndModel(partName: string, modelName?: string) {
     const conditions: ReturnType<typeof sql>[] = [
-      eq(spareParts.partName, partName.trim()) as any,
+      eq(spareParts.partName, partName.trim()),
     ];
     if (modelName) {
-      conditions.push(eq(spareParts.modelName, modelName.trim()) as any);
+      conditions.push(eq(spareParts.modelName, modelName.trim()));
     }
     return this.db.query.spareParts.findFirst({
       where: and(...conditions),

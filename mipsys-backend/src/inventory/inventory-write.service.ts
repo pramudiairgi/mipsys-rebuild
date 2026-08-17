@@ -1,4 +1,9 @@
-import { Injectable, Inject, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
@@ -13,7 +18,7 @@ export class InventoryWriteService {
 
   constructor(
     @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>,
-    private readService: InventoryReadService,
+    private readService: InventoryReadService
   ) {}
 
   async create(dto: CreateSparePartDto) {
@@ -25,25 +30,31 @@ export class InventoryWriteService {
 
     if (existingByCode.length > 0) {
       throw new BadRequestException(
-        `Kode part '${dto.partCode}' sudah digunakan.`,
+        `Kode part '${dto.partCode}' sudah digunakan.`
       );
     }
 
-    const existingByName = await this.readService.findByPartNameAndModel(dto.partName, dto.modelName);
+    const existingByName = await this.readService.findByPartNameAndModel(
+      dto.partName,
+      dto.modelName
+    );
     if (existingByName) {
       throw new BadRequestException(
-        `Part dengan nama '${dto.partName}' dan model '${dto.modelName}' sudah ada (ID: ${existingByName.id}). Gunakan endpoint update untuk mengubah data.`,
+        `Part dengan nama '${dto.partName}' dan model '${dto.modelName}' sudah ada (ID: ${existingByName.id}). Gunakan endpoint update untuk mengubah data.`
       );
     }
 
-    const [created] = await this.db.insert(spareParts).values({
-      partCode: dto.partCode.trim(),
-      partName: dto.partName.trim(),
-      modelName: dto.modelName.trim(),
-      block: dto.block?.trim(),
-      stock: dto.stock ?? 0,
-      price: dto.price.toString(),
-    }).returning();
+    const [created] = await this.db
+      .insert(spareParts)
+      .values({
+        partCode: dto.partCode.trim(),
+        partName: dto.partName.trim(),
+        modelName: dto.modelName.trim(),
+        block: dto.block?.trim(),
+        stock: dto.stock ?? 0,
+        price: dto.price.toString(),
+      })
+      .returning();
 
     const { createdAt, updatedAt, ...sparePart } = created;
     return sparePart;

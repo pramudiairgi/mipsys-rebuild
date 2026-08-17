@@ -7,7 +7,7 @@ import { invoices, expenses } from '../database/schema';
 @Injectable()
 export class ReportService {
   constructor(
-    @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>,
+    @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>
   ) {}
 
   async getProfitLoss(startDate: string, endDate: string) {
@@ -15,18 +15,24 @@ export class ReportService {
       where: and(
         eq(invoices.status, 'PAID' as any),
         gte(invoices.paidDate, startDate),
-        lte(invoices.paidDate, endDate),
+        lte(invoices.paidDate, endDate)
       ) as any,
     });
-    const totalRevenue = revenueData.reduce((s, i) => s + parseFloat(i.total || '0'), 0);
+    const totalRevenue = revenueData.reduce(
+      (s, i) => s + parseFloat(i.total || '0'),
+      0
+    );
 
     const expenseData = await this.db.query.expenses.findMany({
       where: and(
         gte(expenses.expenseDate, startDate),
-        lte(expenses.expenseDate, endDate),
+        lte(expenses.expenseDate, endDate)
       ) as any,
     });
-    const totalExpenses = expenseData.reduce((s, e) => s + parseFloat(e.amount || '0'), 0);
+    const totalExpenses = expenseData.reduce(
+      (s, e) => s + parseFloat(e.amount || '0'),
+      0
+    );
 
     return {
       period: { startDate, endDate },
@@ -46,11 +52,14 @@ export class ReportService {
       where: and(
         eq(invoices.status, 'PAID' as any),
         gte(invoices.paidDate, startDate),
-        lte(invoices.paidDate, endDate),
+        lte(invoices.paidDate, endDate)
       ) as any,
     });
 
-    const totalPpn = paidInvoices.reduce((s, i) => s + parseFloat(i.ppn || '0'), 0);
+    const totalPpn = paidInvoices.reduce(
+      (s, i) => s + parseFloat(i.ppn || '0'),
+      0
+    );
     const totalDpp = paidInvoices.reduce((s, i) => {
       const ppn = parseFloat(i.ppn || '0');
       const total = parseFloat(i.total || '0');
@@ -82,18 +91,24 @@ export class ReportService {
         where: and(
           eq(invoices.status, 'PAID' as any),
           gte(invoices.paidDate, startDate),
-          lte(invoices.paidDate, endDate),
+          lte(invoices.paidDate, endDate)
         ) as any,
       });
-      const revenue = monthRevenue.reduce((s, i) => s + parseFloat(i.total || '0'), 0);
+      const revenue = monthRevenue.reduce(
+        (s, i) => s + parseFloat(i.total || '0'),
+        0
+      );
 
       const monthExpenses = await this.db.query.expenses.findMany({
         where: and(
           gte(expenses.expenseDate, startDate),
-          lte(expenses.expenseDate, endDate),
+          lte(expenses.expenseDate, endDate)
         ) as any,
       });
-      const expense = monthExpenses.reduce((s, e) => s + parseFloat(e.amount || '0'), 0);
+      const expense = monthExpenses.reduce(
+        (s, e) => s + parseFloat(e.amount || '0'),
+        0
+      );
 
       monthlyData.push({ label, revenue, expense, profit: revenue - expense });
     }

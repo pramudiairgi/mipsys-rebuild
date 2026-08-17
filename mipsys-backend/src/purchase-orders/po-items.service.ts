@@ -1,4 +1,9 @@
-import { Injectable, Inject, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
@@ -16,7 +21,17 @@ export class PoItemsService {
     @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>
   ) {}
 
-  async addItems(tx: DrizzleTx, purchaseOrderId: number, items: { sparePartId?: number; partName?: string; modelName?: string; quantity: number; unitPrice: number }[]) {
+  async addItems(
+    tx: DrizzleTx,
+    purchaseOrderId: number,
+    items: {
+      sparePartId?: number;
+      partName?: string;
+      modelName?: string;
+      quantity: number;
+      unitPrice: number;
+    }[]
+  ) {
     for (const item of items) {
       const subtotal = item.quantity * item.unitPrice;
       await tx.insert(poItems).values({
@@ -33,7 +48,9 @@ export class PoItemsService {
   }
 
   async deleteItemsByPO(tx: DrizzleTx, purchaseOrderId: number) {
-    await tx.delete(poItems).where(eq(poItems.purchaseOrderId, purchaseOrderId));
+    await tx
+      .delete(poItems)
+      .where(eq(poItems.purchaseOrderId, purchaseOrderId));
   }
 
   async getItemsByPO(purchaseOrderId: number) {
@@ -42,7 +59,11 @@ export class PoItemsService {
     });
   }
 
-  async updateReceivedQty(tx: DrizzleTx, poItemId: number, receivedQty: number) {
+  async updateReceivedQty(
+    tx: DrizzleTx,
+    poItemId: number,
+    receivedQty: number
+  ) {
     const item = await this.db.query.poItems.findFirst({
       where: eq(poItems.id, poItemId),
     });

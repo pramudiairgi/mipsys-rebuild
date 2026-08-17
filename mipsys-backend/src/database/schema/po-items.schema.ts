@@ -1,4 +1,13 @@
-import { pgTable, varchar, numeric, integer, timestamp, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  varchar,
+  numeric,
+  integer,
+  timestamp,
+  index,
+  check,
+} from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { purchaseOrders } from './purchase-order.schema';
 import { spareParts } from './spare-part.schema';
 
@@ -21,5 +30,11 @@ export const poItems = pgTable(
   (table) => ({
     poIdx: index('po_items_po_idx').on(table.purchaseOrderId),
     spIdx: index('po_items_sp_idx').on(table.sparePartId),
+    qtyPositive: check('chk_poi_qty_positive', sql`${table.quantity} > 0`),
+    priceNonNeg: check('chk_poi_price_nonneg', sql`${table.unitPrice} >= 0`),
+    receivedRange: check(
+      'chk_poi_recv_range',
+      sql`${table.receivedQty} IS NULL OR (${table.receivedQty} >= 0 AND ${table.receivedQty} <= ${table.quantity})`
+    ),
   })
 );

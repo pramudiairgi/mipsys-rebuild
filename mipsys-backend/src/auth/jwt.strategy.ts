@@ -16,7 +16,7 @@ export interface JwtPayload {
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>,
+    @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),

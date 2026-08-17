@@ -14,7 +14,10 @@ const mockDb = {
     }),
   }),
   query: {
-    orderParts: { findMany: jest.fn().mockResolvedValue([]), findFirst: jest.fn().mockResolvedValue(null) },
+    orderParts: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn().mockResolvedValue(null),
+    },
     spareParts: { findFirst: jest.fn().mockResolvedValue(null) },
   },
   update: jest.fn().mockReturnValue({
@@ -43,7 +46,9 @@ describe('OrderPartsService', () => {
   describe('addPart', () => {
     it('should add a part to a service request with priceAtAction', async () => {
       mockDb.query.spareParts.findFirst.mockResolvedValue({
-        id: 1, partName: 'Test Part', price: '100000.00',
+        id: 1,
+        partName: 'Test Part',
+        price: '100000.00',
       });
 
       const result = await service.addPart({

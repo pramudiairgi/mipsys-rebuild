@@ -5,7 +5,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { eq, and, desc, sql, like, or } from 'drizzle-orm';
+import { eq, and, desc, sql, like, or, isNull } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
 import {
@@ -73,6 +73,18 @@ export class FinanceService {
     if (!sr)
       throw new NotFoundException(`Tiket ${dto.ticketNumber} tidak ditemukan.`);
 
+    const existingActive = await this.db.query.invoices.findFirst({
+      where: and(
+        eq(invoices.serviceRequestId, sr.id),
+        isNull(invoices.voidedAt)
+      ) as any,
+    });
+    if (existingActive) {
+      throw new BadRequestException(
+        `Sudah ada invoice untuk tiket ${dto.ticketNumber}.`
+      );
+    }
+
     const invoiceNumber = await this.generateInvoiceNumber();
     const ppnRate = await this.getPpnRate();
     const subtotal = dto.serviceFee + dto.partFee;
@@ -131,7 +143,7 @@ export class FinanceService {
         paidDate: new Date().toISOString().split('T')[0],
         updatedAt: new Date(),
       })
-      .where(eq(invoices.id, id) as any);
+      .where(eq(invoices.id, id));
 
     return {
       success: true,
@@ -154,7 +166,7 @@ export class FinanceService {
     await this.db
       .update(invoices)
       .set({ status: 'VOID', voidedAt: new Date(), updatedAt: new Date() })
-      .where(eq(invoices.id, id) as any);
+      .where(eq(invoices.id, id));
 
     return {
       success: true,
@@ -289,7 +301,7 @@ export class FinanceService {
       .set({
         value: sql`CAST(CAST(${financeSettings.value} AS INTEGER) + 1 AS TEXT)`,
       })
-      .where(eq(financeSettings.key, counterKey) as any);
+      .where(eq(financeSettings.key, counterKey));
 
     const updated = await this.db.query.financeSettings.findFirst({
       where: eq(financeSettings.key, counterKey) as any,

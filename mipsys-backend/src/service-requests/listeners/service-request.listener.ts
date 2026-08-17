@@ -22,7 +22,7 @@ export class ServiceRequestListener {
 
   constructor(
     @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>,
-    private stockMovementsService: StockMovementsService,
+    private stockMovementsService: StockMovementsService
   ) {}
 
   @OnEvent('purchase-order.received')
@@ -38,7 +38,12 @@ export class ServiceRequestListener {
       });
 
       for (const sr of awaitingSrs) {
-        await this.tryTransitionSr(sr.id, sr.ticketNumber!, receivedSparePartIds, performedBy);
+        await this.tryTransitionSr(
+          sr.id,
+          sr.ticketNumber,
+          receivedSparePartIds,
+          performedBy
+        );
       }
     } catch (error) {
       this.logger.error('[SR_AUTO_TRANSITION] Gagal memproses SR:', error);
@@ -49,13 +54,13 @@ export class ServiceRequestListener {
     srId: number,
     ticketNumber: string,
     receivedSparePartIds: number[],
-    performedBy?: number,
+    performedBy?: number
   ) {
     const srParts = await this.db.query.orderParts.findMany({
       where: and(
         eq(orderParts.serviceRequestId, srId),
         eq(orderParts.status, 'OUT_OF_STOCK'),
-        inArray(orderParts.sparePartId, receivedSparePartIds),
+        inArray(orderParts.sparePartId, receivedSparePartIds)
       ),
     });
 
@@ -64,7 +69,7 @@ export class ServiceRequestListener {
     const allOutOfStockParts = await this.db.query.orderParts.findMany({
       where: and(
         eq(orderParts.serviceRequestId, srId),
-        eq(orderParts.status, 'OUT_OF_STOCK'),
+        eq(orderParts.status, 'OUT_OF_STOCK')
       ),
     });
 
@@ -98,9 +103,14 @@ export class ServiceRequestListener {
               referenceId: ticketNumber,
               performedBy,
             },
-            tx,
+            tx
           );
-          await this.stockMovementsService.updateStock(tx, sp.id, -op.quantity, 'SERVICE_USE');
+          await this.stockMovementsService.updateStock(
+            tx,
+            sp.id,
+            -op.quantity,
+            'SERVICE_USE'
+          );
         }
 
         await tx

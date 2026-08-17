@@ -19,7 +19,7 @@ export class AuthService {
 
   constructor(
     @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>,
-    private jwtService: JwtService,
+    private jwtService: JwtService
   ) {}
 
   async login(dto: LoginDto) {

@@ -6,5 +6,7 @@ export const categoryModels = pgTable('category_models', {
   name: varchar('name', { length: 255 }).notNull().unique(),
   description: varchar('description', { length: 500 }),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().$onUpdate(() => sql`now()`),
+  updatedAt: timestamp('updated_at', { mode: 'date' })
+    .defaultNow()
+    .$onUpdate(() => sql`now()`),
 });

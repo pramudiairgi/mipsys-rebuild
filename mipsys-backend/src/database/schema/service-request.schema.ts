@@ -7,9 +7,11 @@ import {
   integer,
   timestamp,
   index,
+  check,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { staffRoleEnum, serviceTypeEnum, serviceStatusEnum } from './enums';
+import { categoryModels } from './category-model.schema';
 
 export const staff = pgTable('staff', {
   id: integer('id').generatedAlwaysAsIdentity().primaryKey(),
@@ -29,6 +31,9 @@ export const products = pgTable('products', {
   id: integer('id').generatedAlwaysAsIdentity().primaryKey(),
   modelName: varchar('model_name', { length: 100 }).notNull(),
   serialNumber: varchar('serial_number', { length: 100 }).unique().notNull(),
+  categoryModelId: integer('category_model_id').references(
+    () => categoryModels.id
+  ),
 });
 
 export const serviceRequests = pgTable(
@@ -50,9 +55,10 @@ export const serviceRequests = pgTable(
     readyDate: date('ready_date'),
     closeDate: date('close_date'),
     pickUpDate: date('pick_up_date'),
-    agingDays: integer('aging_days').default(0),
     problemDescription: text('problem_description'),
     statusService: serviceStatusEnum('status_service').default('WAITING_CHECK'),
+    // status_system: marker sistem terpisah dari alur layanan.
+    // Nilai 'CLOSED' menandai SR ditutup (dibaca frontend & stats.service).
     statusSystem: varchar('status_system', { length: 50 }),
     remarksHistory: text('remarks_history'),
     serviceFee: numeric('service_fee', { precision: 12, scale: 2 }).default(
@@ -67,16 +73,32 @@ export const serviceRequests = pgTable(
   (table) => ({
     ticketIdx: index('ticket_idx').on(table.ticketNumber),
     rmaIdx: index('rma_idx').on(table.rmaNo),
+    customerIdx: index('sr_customer_idx').on(table.customerId),
+    productIdx: index('sr_product_idx').on(table.productId),
+    adminIdx: index('sr_admin_idx').on(table.adminId),
+    techCheckIdx: index('sr_tech_check_idx').on(table.technicianCheckId),
+    statusIdx: index('sr_status_idx').on(table.statusService),
+    incomingDateIdx: index('sr_incoming_date_idx').on(table.incomingDate),
+    checkDateOrder: check(
+      'chk_sr_check_date',
+      sql`${table.checkDate} IS NULL OR ${table.checkDate} >= ${table.incomingDate}`
+    ),
   })
 );
 
-export const serviceLogs = pgTable('service_logs', {
-  id: integer('id').generatedAlwaysAsIdentity().primaryKey(),
-  serviceRequestId: integer('service_request_id').references(
-    () => serviceRequests.id
-  ),
-  action: varchar('action', { length: 100 }).notNull(),
-  description: text('description'),
-  performedBy: integer('performed_by'),
-  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
-});
+export const serviceLogs = pgTable(
+  'service_logs',
+  {
+    id: integer('id').generatedAlwaysAsIdentity().primaryKey(),
+    serviceRequestId: integer('service_request_id').references(
+      () => serviceRequests.id
+    ),
+    action: varchar('action', { length: 100 }).notNull(),
+    description: text('description'),
+    performedBy: integer('performed_by').references(() => staff.id),
+    createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  },
+  (table) => ({
+    serviceRequestIdx: index('sl_sr_idx').on(table.serviceRequestId),
+  })
+);

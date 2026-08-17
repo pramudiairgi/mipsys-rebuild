@@ -11,7 +11,12 @@ import { InventoryListener } from './listeners/inventory.listener';
 @Module({
   imports: [DatabaseModule, StockMovementsModule],
   controllers: [InventoryController, SparePartsController],
-  providers: [InventoryReadService, InventoryWriteService, StockCommandService, InventoryListener],
+  providers: [
+    InventoryReadService,
+    InventoryWriteService,
+    StockCommandService,
+    InventoryListener,
+  ],
   exports: [InventoryReadService, InventoryWriteService, StockCommandService],
 })
 export class InventoryModule {}

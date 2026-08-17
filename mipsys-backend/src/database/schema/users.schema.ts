@@ -1,4 +1,12 @@
-import { pgTable, integer, varchar, timestamp, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  integer,
+  varchar,
+  timestamp,
+  index,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { staff } from './service-request.schema';
 import { userRoleEnum } from './enums';
 
@@ -15,5 +23,9 @@ export const users = pgTable(
   },
   (table) => ({
     usernameIdx: index('username_idx').on(table.username),
-  }),
+    // 1 staff = maksimal 1 akun login (kolom staff_id opsional)
+    staffUnique: uniqueIndex('users_staff_unique')
+      .on(table.staffId)
+      .where(sql`${table.staffId} IS NOT NULL`),
+  })
 );

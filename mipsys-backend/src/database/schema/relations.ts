@@ -6,6 +6,7 @@ import {
   staff,
 } from './service-request.schema';
 import { orderParts, spareParts } from './spare-part.schema';
+import { categoryModels } from './category-model.schema';
 import { purchaseOrders } from './purchase-order.schema';
 import { poItems } from './po-items.schema';
 import { stockMovements } from './stock-movement.schema';
@@ -49,20 +50,23 @@ export const orderPartsRelations = relations(orderParts, ({ one }) => ({
   }),
 }));
 
-export const purchaseOrdersRelations = relations(purchaseOrders, ({ one, many }) => ({
-  items: many(poItems),
-  expenses: many(expenses),
-  requestedByStaff: one(staff, {
-    fields: [purchaseOrders.requestedBy],
-    references: [staff.id],
-    relationName: 'requestedBy',
-  }),
-  approvedByStaff: one(staff, {
-    fields: [purchaseOrders.approvedBy],
-    references: [staff.id],
-    relationName: 'approvedBy',
-  }),
-}));
+export const purchaseOrdersRelations = relations(
+  purchaseOrders,
+  ({ one, many }) => ({
+    items: many(poItems),
+    expenses: many(expenses),
+    requestedByStaff: one(staff, {
+      fields: [purchaseOrders.requestedBy],
+      references: [staff.id],
+      relationName: 'requestedBy',
+    }),
+    approvedByStaff: one(staff, {
+      fields: [purchaseOrders.approvedBy],
+      references: [staff.id],
+      relationName: 'approvedBy',
+    }),
+  })
+);
 
 export const poItemsRelations = relations(poItems, ({ one }) => ({
   purchaseOrder: one(purchaseOrders, {
@@ -75,11 +79,22 @@ export const poItemsRelations = relations(poItems, ({ one }) => ({
   }),
 }));
 
-export const sparePartsRelations = relations(spareParts, ({ many }) => ({
+export const sparePartsRelations = relations(spareParts, ({ one, many }) => ({
   orderParts: many(orderParts),
   purchaseOrders: many(purchaseOrders),
   poItems: many(poItems),
   stockMovements: many(stockMovements),
+  categoryModel: one(categoryModels, {
+    fields: [spareParts.categoryModelId],
+    references: [categoryModels.id],
+  }),
+}));
+
+export const productsRelations = relations(products, ({ one }) => ({
+  categoryModel: one(categoryModels, {
+    fields: [products.categoryModelId],
+    references: [categoryModels.id],
+  }),
 }));
 
 export const stockMovementsRelations = relations(stockMovements, ({ one }) => ({
@@ -101,12 +116,15 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
   }),
 }));
 
-export const paymentHistoriesRelations = relations(paymentHistories, ({ one }) => ({
-  invoice: one(invoices, {
-    fields: [paymentHistories.invoiceId],
-    references: [invoices.id],
-  }),
-}));
+export const paymentHistoriesRelations = relations(
+  paymentHistories,
+  ({ one }) => ({
+    invoice: one(invoices, {
+      fields: [paymentHistories.invoiceId],
+      references: [invoices.id],
+    }),
+  })
+);
 
 export const expensesRelations = relations(expenses, ({ one }) => ({
   purchaseOrder: one(purchaseOrders, {

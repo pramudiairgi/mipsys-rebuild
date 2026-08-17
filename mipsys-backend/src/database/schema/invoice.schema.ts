@@ -8,6 +8,7 @@ import {
   text,
   index,
   uniqueIndex,
+  check,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { serviceRequests } from './service-request.schema';
@@ -47,5 +48,13 @@ export const invoices = pgTable(
     ticketIdx: index('inv_ticket_idx').on(table.ticketNumber),
     statusIdx: index('inv_status_idx').on(table.status),
     ticketUnique: uniqueIndex('inv_ticket_unique').on(table.ticketNumber),
+    // 1 invoice AKTIF (belum void) per service request; boleh re-invoice setelah VOID
+    activeSrUnique: uniqueIndex('inv_sr_unique')
+      .on(table.serviceRequestId)
+      .where(sql`${table.voidedAt} IS NULL`),
+    amountsNonNeg: check(
+      'chk_inv_amounts_nonneg',
+      sql`${table.serviceFee} >= 0 AND ${table.partFee} >= 0 AND ${table.ppn} >= 0 AND ${table.total} >= 0`
+    ),
   })
 );

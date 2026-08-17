@@ -16,7 +16,7 @@ export class ServiceRequestCustomerResolver {
     customerName: string,
     address?: string,
     phone?: string,
-    customerType?: string,
+    customerType?: string
   ): Promise<number> {
     const [existing] = await tx
       .select({ id: customers.id })
@@ -26,19 +26,27 @@ export class ServiceRequestCustomerResolver {
 
     if (existing) return existing.id;
 
-    const [{ id }] = await tx.insert(customers).values({
-      name: customerName.trim(),
-      address: address?.trim(),
-      phone: phone?.trim(),
-      customerType,
-    }).returning({ id: customers.id });
+    const [{ id }] = await tx
+      .insert(customers)
+      .values({
+        name: customerName.trim(),
+        address: address?.trim(),
+        phone: phone?.trim(),
+        customerType,
+      })
+      .returning({ id: customers.id });
     return id;
   }
 
   async updateCustomer(
     tx: DrizzleTx,
     customerId: number,
-    data: { name?: string; address?: string; phone?: string; customerType?: string }
+    data: {
+      name?: string;
+      address?: string;
+      phone?: string;
+      customerType?: string;
+    }
   ) {
     await tx
       .update(customers)

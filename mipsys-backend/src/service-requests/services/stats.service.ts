@@ -18,20 +18,18 @@ export class ServiceRequestStatsService {
       const pending = allSR.filter(
         (s) =>
           s.statusService === 'WAITING_CHECK' ||
-          s.statusService === 'WAITING_APPROVE',
+          s.statusService === 'WAITING_APPROVE'
       ).length;
       const inService = allSR.filter(
-        (s) => s.statusService === 'SERVICE',
+        (s) => s.statusService === 'SERVICE'
       ).length;
       const awaitingParts = allSR.filter(
-        (s) => s.statusService === 'AWAITING_PARTS',
+        (s) => s.statusService === 'AWAITING_PARTS'
       ).length;
       const ready = allSR.filter((s) => s.statusService === 'DONE').length;
-      const closed = allSR.filter(
-        (s) => s.statusSystem === 'CLOSED',
-      ).length;
+      const closed = allSR.filter((s) => s.statusSystem === 'CLOSED').length;
       const cancelled = allSR.filter(
-        (s) => s.statusService === 'CANCEL',
+        (s) => s.statusService === 'CANCEL'
       ).length;
 
       return {

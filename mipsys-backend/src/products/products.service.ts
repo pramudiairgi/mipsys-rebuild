@@ -17,7 +17,7 @@ export class ProductsService {
       where: search
         ? or(
             like(products.modelName, `%${search}%`),
-            like(products.serialNumber, `%${search}%`),
+            like(products.serialNumber, `%${search}%`)
           )
         : undefined,
       orderBy: [products.modelName],
@@ -25,20 +25,28 @@ export class ProductsService {
   }
 
   async findOne(id: number) {
-    const row = await this.db.query.products.findFirst({ where: eq(products.id, id) });
+    const row = await this.db.query.products.findFirst({
+      where: eq(products.id, id),
+    });
     if (!row) throw new NotFoundException(`Product ID ${id} tidak ditemukan.`);
     return row;
   }
 
   async create(data: { modelName: string; serialNumber: string }) {
-    const [result] = await this.db.insert(products).values({
-      modelName: data.modelName.trim(),
-      serialNumber: data.serialNumber.trim(),
-    }).returning({ id: products.id });
+    const [result] = await this.db
+      .insert(products)
+      .values({
+        modelName: data.modelName.trim(),
+        serialNumber: data.serialNumber.trim(),
+      })
+      .returning({ id: products.id });
     return { success: true, id: result.id };
   }
 
-  async update(id: number, data: { modelName?: string; serialNumber?: string }) {
+  async update(
+    id: number,
+    data: { modelName?: string; serialNumber?: string }
+  ) {
     await this.findOne(id);
     await this.db.update(products).set(data).where(eq(products.id, id));
     return { success: true, id };

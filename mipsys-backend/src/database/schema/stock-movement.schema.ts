@@ -1,4 +1,11 @@
-import { pgTable, varchar, text, integer, timestamp, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  varchar,
+  text,
+  integer,
+  timestamp,
+  index,
+} from 'drizzle-orm/pg-core';
 import { spareParts } from './spare-part.schema';
 import { staff } from './service-request.schema';
 import { movementTypeEnum } from './enums';
@@ -21,5 +28,9 @@ export const stockMovements = pgTable(
   (table) => ({
     sparePartIdx: index('sm_sp_idx').on(table.sparePartId),
     movementTypeIdx: index('sm_type_idx').on(table.movementType),
+    referenceIdx: index('sm_reference_idx').on(
+      table.referenceType,
+      table.referenceId
+    ),
   })
 );

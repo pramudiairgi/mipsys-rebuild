@@ -54,7 +54,7 @@ export class ServiceRequestActivityService {
     serviceRequestId: number,
     action: string,
     description: string,
-    performedBy: number | null,
+    performedBy: number | null
   ) {
     await tx.insert(serviceLogs).values({
       serviceRequestId,

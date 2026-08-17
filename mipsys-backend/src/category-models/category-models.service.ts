@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Inject,
-  NotFoundException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
@@ -32,10 +27,13 @@ export class CategoryModelsService {
   }
 
   async create(name: string, description?: string) {
-    const [result] = await this.db.insert(categoryModels).values({
-      name: name.trim(),
-      description: description?.trim() || null,
-    }).returning({ id: categoryModels.id });
+    const [result] = await this.db
+      .insert(categoryModels)
+      .values({
+        name: name.trim(),
+        description: description?.trim() || null,
+      })
+      .returning({ id: categoryModels.id });
     return { success: true, id: result.id, name: name.trim() };
   }
 

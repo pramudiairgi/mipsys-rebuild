@@ -1,4 +1,10 @@
-import { Injectable, Inject, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
@@ -16,7 +22,7 @@ export class StockCommandService {
     @Inject('DB_CONNECTION') private db: NodePgDatabase<typeof schema>,
     private readService: InventoryReadService,
     private stockMovementsService: StockMovementsService,
-    private eventEmitter: EventEmitter2,
+    private eventEmitter: EventEmitter2
   ) {}
 
   async addStock(id: number, quantity: number) {
@@ -32,7 +38,12 @@ export class StockCommandService {
       notes: `Penambahan stok manual: +${quantity}`,
     });
 
-    await this.stockMovementsService.updateStock(this.db, id, quantity, 'ADJUSTMENT');
+    await this.stockMovementsService.updateStock(
+      this.db,
+      id,
+      quantity,
+      'ADJUSTMENT'
+    );
 
     return { success: true, message: 'Stok berhasil ditambah.' };
   }
@@ -50,7 +61,12 @@ export class StockCommandService {
       notes: `Pengurangan stok manual: -${quantity}`,
     });
 
-    await this.stockMovementsService.updateStock(this.db, id, -quantity, 'ADJUSTMENT');
+    await this.stockMovementsService.updateStock(
+      this.db,
+      id,
+      -quantity,
+      'ADJUSTMENT'
+    );
 
     return { success: true, message: 'Stok berhasil dikurangi.' };
   }
@@ -60,7 +76,7 @@ export class StockCommandService {
     quantity: number,
     srTicketNumber: string,
     performedBy: number,
-    tx?: DrizzleTx,
+    tx?: DrizzleTx
   ) {
     const targetDb = tx || this.db;
 
@@ -69,13 +85,14 @@ export class StockCommandService {
         where: eq(spareParts.id, sparePartId),
       });
 
-      if (!part) throw new NotFoundException(`Part ID ${sparePartId} tidak ditemukan.`);
+      if (!part)
+        throw new NotFoundException(`Part ID ${sparePartId} tidak ditemukan.`);
 
       if (part.stock === 0 || quantity > part.stock) {
         throw new BadRequestException(
           part.stock === 0
             ? `Stok ${part.partName} kosong.`
-            : `Stok ${part.partName} tidak mencukupi. Tersedia: ${part.stock}, dibutuhkan: ${quantity}`,
+            : `Stok ${part.partName} tidak mencukupi. Tersedia: ${part.stock}, dibutuhkan: ${quantity}`
         );
       }
 
@@ -90,10 +107,15 @@ export class StockCommandService {
           referenceId: srTicketNumber,
           performedBy,
         },
-        db,
+        db
       );
 
-      await this.stockMovementsService.updateStock(db, sparePartId, -quantity, 'SERVICE_USE');
+      await this.stockMovementsService.updateStock(
+        db,
+        sparePartId,
+        -quantity,
+        'SERVICE_USE'
+      );
 
       return {
         success: true,
