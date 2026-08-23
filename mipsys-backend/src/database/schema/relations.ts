@@ -81,7 +81,6 @@ export const poItemsRelations = relations(poItems, ({ one }) => ({
 
 export const sparePartsRelations = relations(spareParts, ({ one, many }) => ({
   orderParts: many(orderParts),
-  purchaseOrders: many(purchaseOrders),
   poItems: many(poItems),
   stockMovements: many(stockMovements),
   categoryModel: one(categoryModels, {
