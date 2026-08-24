@@ -1,4 +1,10 @@
-import { Injectable, Inject, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { eq, sql } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
@@ -43,7 +49,20 @@ export class StaffService {
 
   async remove(id: number) {
     await this.findOne(id);
-    await this.db.delete(staff).where(eq(staff.id, id));
+    try {
+      await this.db.delete(staff).where(eq(staff.id, id));
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.message.includes('violates foreign key') ||
+          (error as any).code === '23503')
+      ) {
+        throw new BadRequestException(
+          `Staff ID ${id} masih digunakan dan tidak dapat dihapus.`,
+        );
+      }
+      throw error;
+    }
     return { success: true, id };
   }
 

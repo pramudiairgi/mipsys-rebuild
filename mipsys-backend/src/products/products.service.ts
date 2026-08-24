@@ -1,8 +1,14 @@
-import { Injectable, Inject, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { eq, like, or } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
-import { products } from '../database/schema';
+import { products, serviceRequests } from '../database/schema';
 
 @Injectable()
 export class ProductsService {
@@ -54,7 +60,28 @@ export class ProductsService {
 
   async remove(id: number) {
     await this.findOne(id);
-    await this.db.delete(products).where(eq(products.id, id));
+    const refs = await this.db.query.serviceRequests.findFirst({
+      where: eq(serviceRequests.productId, id),
+    });
+    if (refs) {
+      throw new BadRequestException(
+        `Produk ID ${id} masih digunakan pada tiket ${refs.ticketNumber} dan tidak dapat dihapus.`,
+      );
+    }
+    try {
+      await this.db.delete(products).where(eq(products.id, id));
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.message.includes('violates foreign key') ||
+          (error as any).code === '23503')
+      ) {
+        throw new BadRequestException(
+          `Produk ID ${id} masih digunakan dan tidak dapat dihapus.`,
+        );
+      }
+      throw error;
+    }
     return { success: true, id };
   }
 }
