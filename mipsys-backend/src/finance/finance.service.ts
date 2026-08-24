@@ -293,10 +293,7 @@ export class FinanceService {
         value: '0',
         description: `Invoice counter for ${period}`,
       })
-      .onConflictDoUpdate({
-        target: financeSettings.key,
-        set: { value: sql`EXCLUDED.value` },
-      });
+      .onConflictDoNothing();
 
     await this.db
       .update(financeSettings)
