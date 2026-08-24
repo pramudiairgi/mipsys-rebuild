@@ -225,10 +225,13 @@ export class FinanceService {
 
     const sr = result[0];
 
-    const existing = await this.db.query.invoices.findFirst({
-      where: eq(invoices.ticketNumber, ticketNumber),
+    const existingActive = await this.db.query.invoices.findFirst({
+      where: and(
+        eq(invoices.serviceRequestId, sr.id),
+        isNull(invoices.voidedAt),
+      ),
     });
-    if (existing)
+    if (existingActive)
       throw new BadRequestException(
         `Invoice untuk tiket ${ticketNumber} sudah ada.`
       );

@@ -47,7 +47,10 @@ export const invoices = pgTable(
   (table) => ({
     ticketIdx: index('inv_ticket_idx').on(table.ticketNumber),
     statusIdx: index('inv_status_idx').on(table.status),
-    ticketUnique: uniqueIndex('inv_ticket_unique').on(table.ticketNumber),
+    // 1 invoice AKTIF (belum void) per ticket; tiket yang sudah di-void boleh re-invoice
+    ticketUnique: uniqueIndex('inv_ticket_unique')
+      .on(table.ticketNumber)
+      .where(sql`${table.voidedAt} IS NULL`),
     // 1 invoice AKTIF (belum void) per service request; boleh re-invoice setelah VOID
     activeSrUnique: uniqueIndex('inv_sr_unique')
       .on(table.serviceRequestId)

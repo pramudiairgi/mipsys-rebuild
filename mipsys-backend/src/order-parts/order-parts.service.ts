@@ -83,7 +83,10 @@ export class OrderPartsService {
 
   async getTotalPartsCost(serviceRequestId: number): Promise<number> {
     const parts = await this.db.query.orderParts.findMany({
-      where: eq(orderParts.serviceRequestId, serviceRequestId),
+      where: and(
+        eq(orderParts.serviceRequestId, serviceRequestId),
+        ne(orderParts.status, 'CANCELLED'),
+      ),
     });
 
     return parts.reduce((sum, p) => {
