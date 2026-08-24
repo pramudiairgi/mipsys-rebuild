@@ -16,6 +16,7 @@
     "rootDir": "./src",
     "baseUrl": "./",
     "incremental": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "skipLibCheck": true,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
@@ -23,5 +24,7 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "types": ["node", "multer", "jest"]
-  }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test", "drizzle.config.ts", "**/*spec.ts"]
 }
