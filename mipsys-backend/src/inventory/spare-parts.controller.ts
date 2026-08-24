@@ -9,12 +9,15 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { InventoryReadService } from './inventory-read.service';
 import { InventoryWriteService } from './inventory-write.service';
 import { StockCommandService } from './stock-command.service';
 import { CreateSparePartDto } from './dto/create-spare-part.dto';
 import { UpdateSparePartDto } from './dto/update-spare-part.dto';
 
+@ApiTags('Spare Parts')
+@ApiBearerAuth('access-token')
 @Controller('spare-parts')
 export class SparePartsController {
   constructor(

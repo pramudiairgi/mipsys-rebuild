@@ -11,10 +11,13 @@ import {
   HttpStatus,
   Query,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 
+@ApiTags('Customers')
+@ApiBearerAuth('access-token')
 @Controller('customers')
 export class CustomersController {
   constructor(private readonly service: CustomersService) {}

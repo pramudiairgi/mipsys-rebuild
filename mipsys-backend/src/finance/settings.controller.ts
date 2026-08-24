@@ -1,10 +1,13 @@
 import { Controller, Get, Patch, Body } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { SettingsService } from './settings.service';
 import {
   UpdatePpnRateDto,
   UpdateInvoicePrefixDto,
 } from './dto/update-settings.dto';
 
+@ApiTags('Finance')
+@ApiBearerAuth('access-token')
 @Controller('finance/settings')
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}

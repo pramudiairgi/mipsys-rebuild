@@ -10,10 +10,13 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CategoryModelsService } from './category-models.service';
 import { CreateCategoryModelDto } from './dto/create-category-model.dto';
 import { UpdateCategoryModelDto } from './dto/update-category-model.dto';
 
+@ApiTags('Category Models')
+@ApiBearerAuth('access-token')
 @Controller('category-models')
 export class CategoryModelsController {
   constructor(private readonly service: CategoryModelsService) {}

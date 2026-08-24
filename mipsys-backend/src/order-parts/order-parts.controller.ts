@@ -9,9 +9,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { OrderPartsService } from './order-parts.service';
 import { CreateOrderPartDto } from './dto/create-order-part.dto';
 
+@ApiTags('Order Parts')
+@ApiBearerAuth('access-token')
 @Controller('order-parts')
 export class OrderPartsController {
   constructor(private readonly orderPartsService: OrderPartsService) {}

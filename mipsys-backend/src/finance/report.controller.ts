@@ -1,6 +1,9 @@
 import { Controller, Get, Query } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ReportService } from './report.service';
 
+@ApiTags('Finance')
+@ApiBearerAuth('access-token')
 @Controller('finance')
 export class ReportController {
   constructor(private readonly reportService: ReportService) {}

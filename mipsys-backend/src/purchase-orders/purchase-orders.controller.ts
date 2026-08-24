@@ -9,11 +9,14 @@ import {
   HttpStatus,
   HttpCode,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { PurchaseOrdersService } from './purchase-orders.service';
 import { CreatePoHeaderDto } from './dto/create-po-header.dto';
 import { ReceivePoDto } from './dto/receive-po.dto';
 import type { PoStatusType } from './po-state-machine.guard';
 
+@ApiTags('Purchase Orders')
+@ApiBearerAuth('access-token')
 @Controller('purchase-orders')
 export class PurchaseOrdersController {
   constructor(private readonly poService: PurchaseOrdersService) {}

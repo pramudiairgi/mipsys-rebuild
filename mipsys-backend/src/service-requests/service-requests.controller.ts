@@ -16,10 +16,11 @@ import { ApproveQuoteDto } from './dto/approve-quote.dto';
 import { SaveQuoteDto } from './dto/save-quote.dto';
 import { CancelQuoteDto } from './dto/cancel-quote.dto';
 import { CurrentStaffId } from '../auth/current-staff-id.decorator';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
-@Controller('service-request')
+@ApiTags('Service Requests')
 @ApiBearerAuth('access-token')
+@Controller('service-request')
 export class ServiceRequestsController {
   constructor(private readonly serviceRequestService: ServiceRequestService) {}
 

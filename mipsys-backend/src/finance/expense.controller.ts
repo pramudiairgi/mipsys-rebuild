@@ -11,9 +11,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ExpenseService } from './expense.service';
 import { CreateExpenseDto, UpdateExpenseDto } from './dto/create-expense.dto';
 
+@ApiTags('Finance')
+@ApiBearerAuth('access-token')
 @Controller('finance/expenses')
 export class ExpenseController {
   constructor(private readonly expenseService: ExpenseService) {}

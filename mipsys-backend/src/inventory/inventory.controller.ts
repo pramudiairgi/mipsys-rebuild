@@ -7,11 +7,14 @@ import {
   ParseIntPipe,
   Query,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { InventoryReadService } from './inventory-read.service';
 import { StockCommandService } from './stock-command.service';
 import { StockMovementsService } from '../stock-movements/stock-movements.service';
 import { ReserveStockDto } from './dto/reserve-stock.dto';
 
+@ApiTags('Inventory')
+@ApiBearerAuth('access-token')
 @Controller('inventory')
 export class InventoryController {
   constructor(
