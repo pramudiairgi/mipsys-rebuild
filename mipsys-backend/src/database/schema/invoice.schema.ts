@@ -26,18 +26,24 @@ export const invoices = pgTable(
       () => serviceRequests.id
     ),
     clientName: varchar('client_name', { length: 255 }).notNull(),
-    serviceFee: numeric('service_fee', { precision: 12, scale: 2 }).default(
-      '0.00'
-    ),
-    partFee: numeric('part_fee', { precision: 12, scale: 2 }).default('0.00'),
-    ppn: numeric('ppn', { precision: 12, scale: 2 }).default('0.00'),
-    total: numeric('total', { precision: 12, scale: 2 }).notNull(),
+    serviceFee: numeric('service_fee', {
+      precision: 12,
+      scale: 2,
+      mode: 'number',
+    }).default(0),
+    partFee: numeric('part_fee', { precision: 12, scale: 2, mode: 'number' }).default(0),
+    ppn: numeric('ppn', { precision: 12, scale: 2, mode: 'number' }).default(0),
+    total: numeric('total', {
+      precision: 12,
+      scale: 2,
+      mode: 'number',
+    }).notNull(),
     status: invoiceStatusEnum('status').default('UNPAID'),
     paymentMethod: paymentMethodEnum('payment_method'),
     invoiceDate: date('invoice_date').notNull(),
     paidDate: date('paid_date'),
     notes: text('notes'),
-    ppnRate: numeric('ppn_rate', { precision: 5, scale: 2 }).default('11.00'),
+    ppnRate: numeric('ppn_rate', { precision: 5, scale: 2, mode: 'number' }).default(11),
     voidedAt: timestamp('voided_at', { mode: 'date' }),
     createdAt: timestamp('created_at', { mode: 'date' }).defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date' })

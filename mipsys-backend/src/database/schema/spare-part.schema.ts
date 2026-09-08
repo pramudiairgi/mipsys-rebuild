@@ -27,7 +27,7 @@ export const spareParts = pgTable(
     stock: integer('stock').default(0).notNull(),
     minStock: integer('min_stock').default(5).notNull(),
     location: varchar('location', { length: 100 }),
-    price: numeric('price', { precision: 12, scale: 2 }).default('0.00'),
+    price: numeric('price', { precision: 12, scale: 2, mode: 'number' }).default(0),
     note: text('note'),
     ipStatus: varchar('ip_status', { length: 50 }),
     categoryModelId: integer('category_model_id').references(
@@ -58,7 +58,8 @@ export const orderParts = pgTable(
     priceAtAction: numeric('price_at_action', {
       precision: 12,
       scale: 2,
-    }).default('0.00'),
+      mode: 'number',
+    }).default(0),
     status: orderPartStatusEnum('status').default('IN_STOCK'),
     createdAt: timestamp('created_at', { mode: 'date' }).defaultNow(),
   },

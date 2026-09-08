@@ -6,7 +6,7 @@ export interface InventoryPart {
   partName: string;
   stock: number;
   minStock: number;
-  price: string;
+  price: number;
   location?: string;
   modelName?: string;
 }

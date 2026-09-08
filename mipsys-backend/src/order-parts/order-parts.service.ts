@@ -31,7 +31,7 @@ export class OrderPartsService {
         `Part ID ${dto.sparePartId} tidak ditemukan.`
       );
 
-    const priceAtAction = part.price || '0.00';
+    const priceAtAction = part.price ?? 0;
 
     const existing = await targetDb.query.orderParts.findFirst({
       where: and(
@@ -90,7 +90,7 @@ export class OrderPartsService {
     });
 
     return parts.reduce((sum, p) => {
-      const price = parseFloat(p.priceAtAction || '0');
+      const price = p.priceAtAction ?? 0;
       const qty = p.quantity || 0;
       return sum + price * qty;
     }, 0);

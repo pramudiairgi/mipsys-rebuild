@@ -35,9 +35,9 @@ export class PoItemsService {
         partName: item.partName ?? null,
         modelName: item.modelName ?? null,
         quantity: item.quantity,
-        unitPrice: item.unitPrice.toString(),
+        unitPrice: item.unitPrice,
         receivedQty: 0,
-        subtotal: subtotal.toString(),
+        subtotal,
       });
     }
   }
@@ -65,7 +65,7 @@ export class PoItemsService {
     if (!item) return;
 
     const newTotalReceived = (item.receivedQty || 0) + receivedQty;
-    const subtotal = (newTotalReceived * parseFloat(item.unitPrice)).toString();
+    const subtotal = newTotalReceived * (item.unitPrice ?? 0);
 
     await tx
       .update(poItems)

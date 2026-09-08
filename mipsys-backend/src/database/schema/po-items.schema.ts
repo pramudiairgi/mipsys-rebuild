@@ -22,9 +22,13 @@ export const poItems = pgTable(
     partName: varchar('part_name', { length: 200 }),
     modelName: varchar('model_name', { length: 255 }),
     quantity: integer('quantity').notNull(),
-    unitPrice: numeric('unit_price', { precision: 12, scale: 2 }).notNull(),
+    unitPrice: numeric('unit_price', {
+      precision: 12,
+      scale: 2,
+      mode: 'number',
+    }).notNull(),
     receivedQty: integer('received_qty').default(0),
-    subtotal: numeric('subtotal', { precision: 14, scale: 2 }),
+    subtotal: numeric('subtotal', { precision: 14, scale: 2, mode: 'number' }),
     createdAt: timestamp('created_at', { mode: 'date' }).defaultNow(),
   },
   (table) => ({

@@ -21,10 +21,7 @@ export class ReportService {
         lte(invoices.paidDate, endDate)
       ),
     });
-    const totalRevenue = revenueData.reduce(
-      (s, i) => s + parseFloat(i.total || '0'),
-      0
-    );
+    const totalRevenue = revenueData.reduce((s, i) => s + (Number(i.total) || 0), 0);
 
     const expenseData = await this.db.query.expenses.findMany({
       where: and(
@@ -32,10 +29,7 @@ export class ReportService {
         lte(expenses.expenseDate, endDate)
       ),
     });
-    const totalExpenses = expenseData.reduce(
-      (s, e) => s + parseFloat(e.amount || '0'),
-      0
-    );
+    const totalExpenses = expenseData.reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
     return {
       period: { startDate, endDate },
@@ -59,13 +53,10 @@ export class ReportService {
       ),
     });
 
-    const totalPpn = paidInvoices.reduce(
-      (s, i) => s + parseFloat(i.ppn || '0'),
-      0
-    );
+    const totalPpn = paidInvoices.reduce((s, i) => s + (Number(i.ppn) || 0), 0);
     const totalDpp = paidInvoices.reduce((s, i) => {
-      const ppn = parseFloat(i.ppn || '0');
-      const total = parseFloat(i.total || '0');
+      const ppn = Number(i.ppn) || 0;
+      const total = Number(i.total) || 0;
       return s + (total - ppn);
     }, 0);
 
@@ -74,7 +65,7 @@ export class ReportService {
       totalInvoices: paidInvoices.length,
       totalDpp,
       totalPpn,
-      ppnRate: paidInvoices.length > 0 ? paidInvoices[0].ppnRate : '11.00',
+      ppnRate: paidInvoices.length > 0 ? paidInvoices[0].ppnRate : 11,
     };
   }
 
@@ -102,10 +93,7 @@ export class ReportService {
           lte(invoices.paidDate, endDate)
         ),
       });
-      const revenue = monthRevenue.reduce(
-        (s, i) => s + parseFloat(i.total || '0'),
-        0
-      );
+      const revenue = monthRevenue.reduce((s, i) => s + (Number(i.total) || 0), 0);
 
       const monthExpenses = await this.db.query.expenses.findMany({
         where: and(
@@ -113,10 +101,7 @@ export class ReportService {
           lte(expenses.expenseDate, endDate)
         ),
       });
-      const expense = monthExpenses.reduce(
-        (s, e) => s + parseFloat(e.amount || '0'),
-        0
-      );
+      const expense = monthExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
       monthlyData.push({ label, revenue, expense, profit: revenue - expense });
     }

@@ -52,7 +52,7 @@ export class InventoryWriteService {
         modelName: dto.modelName.trim(),
         block: dto.block?.trim(),
         stock: dto.stock ?? 0,
-        price: dto.price.toString(),
+        price: dto.price,
       })
       .returning({
         id: spareParts.id,
@@ -76,7 +76,7 @@ export class InventoryWriteService {
         ...dto,
         partCode: dto.partCode?.trim(),
         partName: dto.partName?.trim(),
-        price: dto.price?.toString(),
+        price: dto.price,
         updatedAt: new Date(),
       })
       .where(eq(spareParts.id, id));

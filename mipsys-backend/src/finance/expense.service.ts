@@ -57,7 +57,7 @@ export class ExpenseService {
         expenseNumber,
         expenseType: 'OPERATIONAL',
         description: dto.description,
-        amount: dto.amount.toString(),
+        amount: dto.amount,
         expenseDate: dto.expenseDate,
         category: dto.category || 'OTHER',
       })
@@ -69,7 +69,7 @@ export class ExpenseService {
     await this.findOne(id);
     const values: Partial<typeof expenses.$inferInsert> = {};
     if (dto.description !== undefined) values.description = dto.description;
-    if (dto.amount !== undefined) values.amount = dto.amount.toString();
+    if (dto.amount !== undefined) values.amount = dto.amount;
     if (dto.expenseDate !== undefined) values.expenseDate = dto.expenseDate;
     if (dto.category !== undefined) values.category = dto.category;
     await this.db.update(expenses).set(values).where(eq(expenses.id, id));
@@ -105,7 +105,7 @@ export class ExpenseService {
           expenseType: 'PO',
           poId: po.id,
           description: `PO ${po.poNumber} — ${po.supplierName}`,
-          amount: po.totalAmount || '0',
+          amount: po.totalAmount ?? 0,
           expenseDate:
             po.receivedDate ?? new Date().toISOString().split('T')[0],
           category: 'OTHER',
@@ -129,10 +129,7 @@ export class ExpenseService {
         value: '0',
         description: `Expense counter for ${period}`,
       })
-      .onConflictDoUpdate({
-        target: financeSettings.key,
-        set: { value: sql`EXCLUDED.value` },
-      });
+      .onConflictDoNothing();
 
     await this.db
       .update(financeSettings)

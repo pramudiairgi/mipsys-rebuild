@@ -50,7 +50,7 @@ export class InventoryListener {
             status: 'REQUESTED',
             requestedBy: 1,
             notes: `Auto-PO: ${part.partName} stok menipis (${newStock} < ${part.minStock})`,
-            totalAmount: '0.00',
+            totalAmount: 0,
           })
           .returning({ id: purchaseOrders.id });
 
@@ -58,7 +58,7 @@ export class InventoryListener {
           purchaseOrderId: poResult.id,
           sparePartId: part.id,
           quantity: reorderQty,
-          unitPrice: '0.00',
+          unitPrice: 0,
           receivedQty: 0,
         });
       });
@@ -81,10 +81,7 @@ export class InventoryListener {
         value: '0',
         description: `PO counter for ${dateStr}`,
       })
-      .onConflictDoUpdate({
-        target: financeSettings.key,
-        set: { value: sql`EXCLUDED.value` },
-      });
+      .onConflictDoNothing();
 
     await this.db
       .update(financeSettings)

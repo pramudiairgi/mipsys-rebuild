@@ -100,11 +100,11 @@ export class FinanceService {
         ticketNumber: dto.ticketNumber,
         serviceRequestId: sr.id,
         clientName: dto.clientName,
-        serviceFee: dto.serviceFee.toString(),
-        partFee: dto.partFee.toString(),
-        ppn: ppn.toFixed(2),
-        ppnRate: ppnRate.toString(),
-        total: total.toFixed(2),
+        serviceFee: dto.serviceFee,
+        partFee: dto.partFee,
+        ppn: Number(ppn.toFixed(2)),
+        ppnRate,
+        total: Number(total.toFixed(2)),
         status: 'UNPAID',
         paymentMethod: dto.paymentMethod || null,
         invoiceDate: new Date().toISOString().split('T')[0],
@@ -130,7 +130,7 @@ export class FinanceService {
 
     await this.db.insert(paymentHistories).values({
       invoiceId: id,
-      amount: dto.amount.toString(),
+      amount: dto.amount,
       paymentMethod: dto.paymentMethod,
       paidAt: new Date(),
       referenceNumber: dto.referenceNumber || null,
@@ -181,11 +181,11 @@ export class FinanceService {
 
     const totalRevenue = allInvoices
       .filter((i) => i.status === 'PAID')
-      .reduce((sum, i) => sum + parseFloat(i.total || '0'), 0);
+      .reduce((sum, i) => sum + (Number(i.total) || 0), 0);
 
     const outstanding = allInvoices
       .filter((i) => i.status === 'UNPAID')
-      .reduce((sum, i) => sum + parseFloat(i.total || '0'), 0);
+      .reduce((sum, i) => sum + (Number(i.total) || 0), 0);
 
     const paidCount = allInvoices.filter((i) => i.status === 'PAID').length;
     const unpaidCount = allInvoices.filter((i) => i.status === 'UNPAID').length;
@@ -237,7 +237,7 @@ export class FinanceService {
       );
 
     const partsCost = await this.orderPartsService.getTotalPartsCost(sr.id);
-    const serviceFee = parseFloat(sr.serviceFee || '0');
+    const serviceFee = sr.serviceFee ?? 0;
     const ppnRate = await this.getPpnRate();
 
     const subtotal = serviceFee + partsCost;
@@ -253,11 +253,11 @@ export class FinanceService {
         ticketNumber,
         serviceRequestId: sr.id,
         clientName: sr.customerName || 'Customer',
-        serviceFee: serviceFee.toString(),
-        partFee: partsCost.toString(),
-        ppn: ppn.toFixed(2),
-        ppnRate: ppnRate.toString(),
-        total: total.toFixed(2),
+        serviceFee,
+        partFee: partsCost,
+        ppn: Number(ppn.toFixed(2)),
+        ppnRate,
+        total: Number(total.toFixed(2)),
         status: 'UNPAID',
         invoiceDate: new Date().toISOString().split('T')[0],
       })

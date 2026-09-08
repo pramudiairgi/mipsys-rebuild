@@ -389,14 +389,14 @@ export class ServiceRequestService {
       }
 
       const totalPartFee = parts.reduce((sum, p) => {
-        return sum + parseFloat(p.priceAtAction || '0') * p.quantity;
+        return sum + (p.priceAtAction ?? 0) * p.quantity;
       }, 0);
 
       await tx
         .update(serviceRequests)
         .set({
-          serviceFee: dto.serviceFee.toString(),
-          partFee: totalPartFee.toString(),
+          serviceFee: dto.serviceFee,
+          partFee: totalPartFee,
           updatedAt: new Date(),
         })
         .where(eq(serviceRequests.ticketNumber, ticketNumber));
@@ -472,9 +472,7 @@ export class ServiceRequestService {
         );
       }
 
-      const hasQuote =
-        parseFloat(sr.serviceFee || '0') > 0 ||
-        parseFloat(sr.partFee || '0') > 0;
+      const hasQuote = (sr.serviceFee ?? 0) > 0 || (sr.partFee ?? 0) > 0;
       if (!hasQuote) {
         throw new BadRequestException(
           'Belum ada penawaran yang disimpan. Simpan penawaran terlebih dahulu.'
@@ -541,7 +539,7 @@ export class ServiceRequestService {
       this.stateMachine.validate(sr.statusService, newStatus as SrStatusType);
 
       const totalPartFee = parts.reduce((sum, p) => {
-        return sum + parseFloat(p.priceAtAction || '0') * p.quantity;
+        return sum + (p.priceAtAction ?? 0) * p.quantity;
       }, 0);
 
       await tx

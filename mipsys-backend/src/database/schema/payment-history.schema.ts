@@ -19,7 +19,11 @@ export const paymentHistories = pgTable(
     invoiceId: integer('invoice_id')
       .notNull()
       .references(() => invoices.id),
-    amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
+    amount: numeric('amount', {
+      precision: 14,
+      scale: 2,
+      mode: 'number',
+    }).notNull(),
     paymentMethod: paymentMethodEnum('payment_method').notNull(),
     paidAt: timestamp('paid_at', { mode: 'date' }).defaultNow().notNull(),
     referenceNumber: varchar('reference_number', { length: 100 }),

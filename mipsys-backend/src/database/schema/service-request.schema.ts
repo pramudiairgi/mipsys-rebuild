@@ -61,10 +61,12 @@ export const serviceRequests = pgTable(
     // Nilai 'CLOSED' menandai SR ditutup (dibaca frontend & stats.service).
     statusSystem: varchar('status_system', { length: 50 }),
     remarksHistory: text('remarks_history'),
-    serviceFee: numeric('service_fee', { precision: 12, scale: 2 }).default(
-      '0.00'
-    ),
-    partFee: numeric('part_fee', { precision: 12, scale: 2 }).default('0.00'),
+    serviceFee: numeric('service_fee', {
+      precision: 12,
+      scale: 2,
+      mode: 'number',
+    }).default(0),
+    partFee: numeric('part_fee', { precision: 12, scale: 2, mode: 'number' }).default(0),
     createdAt: timestamp('created_at', { mode: 'date' }).defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date' })
       .defaultNow()

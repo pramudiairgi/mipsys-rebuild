@@ -27,9 +27,11 @@ export const purchaseOrders = pgTable(
     orderDate: date('order_date'),
     expectedDate: date('expected_date'),
     receivedDate: date('received_date'),
-    totalAmount: numeric('total_amount', { precision: 14, scale: 2 }).default(
-      '0.00'
-    ),
+    totalAmount: numeric('total_amount', {
+      precision: 14,
+      scale: 2,
+      mode: 'number',
+    }).default(0),
     notes: text('notes'),
     createdAt: timestamp('created_at', { mode: 'date' }).defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date' })

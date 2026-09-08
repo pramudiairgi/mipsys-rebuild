@@ -24,7 +24,11 @@ export const expenses = pgTable(
     expenseType: expenseTypeEnum('expense_type').notNull(),
     poId: integer('po_id').references(() => purchaseOrders.id),
     description: text('description').notNull(),
-    amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
+    amount: numeric('amount', {
+      precision: 14,
+      scale: 2,
+      mode: 'number',
+    }).notNull(),
     expenseDate: date('expense_date').notNull(),
     category: expenseCategoryEnum('category').default('OTHER'),
     createdBy: integer('created_by').references(() => staff.id),

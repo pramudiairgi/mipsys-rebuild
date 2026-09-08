@@ -141,7 +141,7 @@ export class PurchaseOrdersService {
           status: 'DRAFT',
           requestedBy: dto.requestedBy,
           notes: dto.notes?.trim() ?? null,
-          totalAmount: totalAmount.toString(),
+          totalAmount,
         })
         .returning({ id: purchaseOrders.id });
 
@@ -171,7 +171,7 @@ export class PurchaseOrdersService {
         .set({
           supplierName: dto.supplierName || 'EPSON',
           notes: dto.notes?.trim() ?? null,
-          totalAmount: totalAmount.toString(),
+          totalAmount,
           updatedAt: new Date(),
         })
         .where(eq(purchaseOrders.id, id));
@@ -374,10 +374,7 @@ export class PurchaseOrdersService {
         value: '0',
         description: `PO counter for ${dateStr}`,
       })
-      .onConflictDoUpdate({
-        target: financeSettings.key,
-        set: { value: sql`EXCLUDED.value` },
-      });
+      .onConflictDoNothing();
 
     await this.db
       .update(financeSettings)

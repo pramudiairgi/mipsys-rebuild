@@ -4,7 +4,7 @@ export interface SparePart {
   partName: string;
   modelName: string;
   stock: number;
-  price: string | number;
+  price: number;
   ipStatus: 'IP' | 'Non IP';
   note?: string;
   createdAt?: string;

@@ -5,7 +5,7 @@ export interface OrderPart {
   sparePartId: number | null;
   partName: string;
   quantity: number;
-  priceAtAction: string;
+  priceAtAction: number;
   status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'MANUAL_NEW' | 'CANCELLED' | 'PROPOSED';
   partCode: string | null;
   currentStock: number | null;
