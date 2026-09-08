@@ -4,6 +4,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { RolesGuard } from './auth/roles.guard';
 import { ServiceRequestsModule } from './service-requests/service-requests.module';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { FinanceModule } from './finance/finance.module';
@@ -35,6 +36,10 @@ import { ProductsModule } from './products/products.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

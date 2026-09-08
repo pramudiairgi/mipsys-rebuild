@@ -8,7 +8,7 @@ import {
 import { eq, sql } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
-import { staff } from '../database/schema';
+import { staff, users } from '../database/schema';
 
 @Injectable()
 export class StaffService {
@@ -44,6 +44,12 @@ export class StaffService {
   ) {
     await this.findOne(id);
     await this.db.update(staff).set(data).where(eq(staff.id, id));
+    if (data.role) {
+      await this.db
+        .update(users)
+        .set({ role: data.role as any })
+        .where(eq(users.staffId, id));
+    }
     return { success: true, id };
   }
 

@@ -14,6 +14,8 @@ import { PurchaseOrdersService } from './purchase-orders.service';
 import { CreatePoHeaderDto } from './dto/create-po-header.dto';
 import { ReceivePoDto } from './dto/receive-po.dto';
 import type { PoStatusType } from './po-state-machine.guard';
+import { CurrentStaffId } from '../auth/current-staff-id.decorator';
+import { Roles } from '../auth/roles.decorator';
 
 @ApiTags('Purchase Orders')
 @ApiBearerAuth('access-token')
@@ -32,12 +34,14 @@ export class PurchaseOrdersController {
   }
 
   @Post()
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreatePoHeaderDto) {
     return this.poService.create(dto);
   }
 
   @Patch(':id')
+  @Roles('ADMIN')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: CreatePoHeaderDto
@@ -46,19 +50,24 @@ export class PurchaseOrdersController {
   }
 
   @Patch(':id/status')
+  @Roles('ADMIN')
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body('status') status: PoStatusType,
-    @Body('performedBy') performedBy?: number
+    @Body('performedBy') performedBy: number | undefined,
+    @CurrentStaffId() staffId: number,
   ) {
-    return this.poService.updateStatus(id, status, performedBy);
+    return this.poService.updateStatus(id, status, staffId ?? performedBy);
   }
 
   @Patch(':id/receive')
+  @Roles('ADMIN')
   async receivePO(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: ReceivePoDto
+    @Body() dto: ReceivePoDto,
+    @CurrentStaffId() staffId: number,
   ) {
+    if (staffId) (dto as any).performedBy = staffId;
     return this.poService.receivePO(id, dto);
   }
 }

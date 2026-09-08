@@ -12,6 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Roles } from '../auth/roles.decorator';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -38,12 +39,14 @@ export class CustomersController {
   }
 
   @Post()
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateCustomerDto) {
     return this.service.create(dto);
   }
 
   @Patch(':id')
+  @Roles('ADMIN')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCustomerDto
@@ -52,6 +55,7 @@ export class CustomersController {
   }
 
   @Delete(':id')
+  @Roles('ADMIN')
   async remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);
   }

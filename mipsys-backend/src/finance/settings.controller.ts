@@ -1,5 +1,6 @@
 import { Controller, Get, Patch, Body } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Roles } from '../auth/roles.decorator';
 import { SettingsService } from './settings.service';
 import {
   UpdatePpnRateDto,
@@ -8,6 +9,7 @@ import {
 
 @ApiTags('Finance')
 @ApiBearerAuth('access-token')
+@Roles('ADMIN')
 @Controller('finance/settings')
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}

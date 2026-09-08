@@ -10,6 +10,7 @@ import {
   DefaultValuePipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Roles } from '../auth/roles.decorator';
 import { InventoryReadService } from './inventory-read.service';
 import { InventoryWriteService } from './inventory-write.service';
 import { StockCommandService } from './stock-command.service';
@@ -41,11 +42,13 @@ export class SparePartsController {
   }
 
   @Post()
+  @Roles('ADMIN')
   async create(@Body() dto: CreateSparePartDto) {
     return await this.writeService.create(dto);
   }
 
   @Patch(':id')
+  @Roles('ADMIN')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateSparePartDto
@@ -54,6 +57,7 @@ export class SparePartsController {
   }
 
   @Patch(':id/add-stock')
+  @Roles('ADMIN')
   async addStock(
     @Param('id', ParseIntPipe) id: number,
     @Body('quantity', ParseIntPipe) qty: number
@@ -62,6 +66,7 @@ export class SparePartsController {
   }
 
   @Patch(':id/reduce-stock')
+  @Roles('ADMIN')
   async reduceStock(
     @Param('id', ParseIntPipe) id: number,
     @Body('quantity', ParseIntPipe) qty: number

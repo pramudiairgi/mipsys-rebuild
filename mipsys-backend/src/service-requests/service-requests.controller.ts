@@ -16,6 +16,7 @@ import { ApproveQuoteDto } from './dto/approve-quote.dto';
 import { SaveQuoteDto } from './dto/save-quote.dto';
 import { CancelQuoteDto } from './dto/cancel-quote.dto';
 import { CurrentStaffId } from '../auth/current-staff-id.decorator';
+import { Roles } from '../auth/roles.decorator';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Service Requests')
@@ -55,6 +56,7 @@ export class ServiceRequestsController {
   }
 
   @Post('entry')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createDto: CreateServiceRequestDto,
@@ -64,6 +66,7 @@ export class ServiceRequestsController {
   }
 
   @Patch(':ticketNumber')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.OK)
   async update(
     @Param('ticketNumber') ticketNumber: string,
@@ -76,56 +79,74 @@ export class ServiceRequestsController {
   }
 
   @Post(':ticketNumber/diagnose')
+  @Roles('TECHNICIAN')
   @HttpCode(HttpStatus.OK)
   async diagnose(
     @Param('ticketNumber') ticketNumber: string,
-    @Body() dto: DiagnoseSrDto
+    @Body() dto: DiagnoseSrDto,
+    @CurrentStaffId() staffId: number,
   ) {
+    if (staffId) dto.performedBy = staffId;
     return this.serviceRequestService.diagnose(ticketNumber, dto);
   }
 
   @Post(':ticketNumber/save-quote')
+  @Roles('TECHNICIAN')
   @HttpCode(HttpStatus.OK)
   async saveQuote(
     @Param('ticketNumber') ticketNumber: string,
-    @Body() dto: SaveQuoteDto
+    @Body() dto: SaveQuoteDto,
+    @CurrentStaffId() staffId: number,
   ) {
+    if (staffId) (dto as any).performedBy = staffId;
     return this.serviceRequestService.saveQuote(ticketNumber, dto);
   }
 
   @Post(':ticketNumber/cancel-quote')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.OK)
   async cancelQuote(
     @Param('ticketNumber') ticketNumber: string,
-    @Body() dto: CancelQuoteDto
+    @Body() dto: CancelQuoteDto,
+    @CurrentStaffId() staffId: number,
   ) {
+    if (staffId) dto.performedBy = staffId;
     return this.serviceRequestService.cancelQuote(ticketNumber, dto);
   }
 
   @Post(':ticketNumber/retry-awaiting-parts')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.OK)
   async retryAwaitingParts(
     @Param('ticketNumber') ticketNumber: string,
-    @Body() dto: CancelQuoteDto
+    @Body() dto: CancelQuoteDto,
+    @CurrentStaffId() staffId: number,
   ) {
+    if (staffId) dto.performedBy = staffId;
     return this.serviceRequestService.retryAwaitingParts(ticketNumber, dto);
   }
 
   @Post(':ticketNumber/close')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.OK)
   async closeTicket(
     @Param('ticketNumber') ticketNumber: string,
-    @Body() dto: { performedBy?: number }
+    @Body() dto: { performedBy?: number },
+    @CurrentStaffId() staffId: number,
   ) {
+    if (staffId) dto.performedBy = staffId;
     return this.serviceRequestService.closeTicket(ticketNumber, dto);
   }
 
   @Post(':ticketNumber/approve-quote')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.OK)
   async approveQuote(
     @Param('ticketNumber') ticketNumber: string,
-    @Body() dto: ApproveQuoteDto
+    @Body() dto: ApproveQuoteDto,
+    @CurrentStaffId() staffId: number,
   ) {
+    if (staffId) (dto as any).performedBy = staffId;
     return this.serviceRequestService.approveQuote(ticketNumber, dto);
   }
 }

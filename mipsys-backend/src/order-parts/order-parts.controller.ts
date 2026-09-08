@@ -10,6 +10,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Roles } from '../auth/roles.decorator';
 import { OrderPartsService } from './order-parts.service';
 import { CreateOrderPartDto } from './dto/create-order-part.dto';
 
@@ -20,6 +21,7 @@ export class OrderPartsController {
   constructor(private readonly orderPartsService: OrderPartsService) {}
 
   @Post()
+  @Roles('TECHNICIAN')
   @HttpCode(HttpStatus.CREATED)
   async addPart(@Body() dto: CreateOrderPartDto) {
     return this.orderPartsService.addPart(dto);
@@ -37,6 +39,7 @@ export class OrderPartsController {
   }
 
   @Delete(':id')
+  @Roles('TECHNICIAN')
   async removePart(@Param('id', ParseIntPipe) id: number) {
     return this.orderPartsService.removePart(id);
   }

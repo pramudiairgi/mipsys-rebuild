@@ -12,6 +12,7 @@ import { InventoryReadService } from './inventory-read.service';
 import { StockCommandService } from './stock-command.service';
 import { StockMovementsService } from '../stock-movements/stock-movements.service';
 import { ReserveStockDto } from './dto/reserve-stock.dto';
+import { CurrentStaffId } from '../auth/current-staff-id.decorator';
 
 @ApiTags('Inventory')
 @ApiBearerAuth('access-token')
@@ -49,13 +50,14 @@ export class InventoryController {
   @Post('parts/:id/reserve')
   async reserveStock(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: ReserveStockDto
+    @Body() dto: ReserveStockDto,
+    @CurrentStaffId() staffId: number,
   ) {
     return this.stockCommand.reserveStock(
       id,
       dto.quantity,
       dto.srTicketNumber,
-      dto.performedBy
+      staffId ?? dto.performedBy,
     );
   }
 
