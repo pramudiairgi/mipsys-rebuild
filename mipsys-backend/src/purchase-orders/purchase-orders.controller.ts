@@ -15,6 +15,7 @@ import { CreatePoHeaderDto } from './dto/create-po-header.dto';
 import { ReceivePoDto } from './dto/receive-po.dto';
 import type { PoStatusType } from './po-state-machine.guard';
 import { CurrentStaffId } from '../auth/current-staff-id.decorator';
+import { CurrentUser } from '../auth/current-user.decorator';
 import { Roles } from '../auth/roles.decorator';
 
 @ApiTags('Purchase Orders')
@@ -50,13 +51,26 @@ export class PurchaseOrdersController {
   }
 
   @Patch(':id/status')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'TECHNICIAN')
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body('status') status: PoStatusType,
     @Body('performedBy') performedBy: number | undefined,
     @CurrentStaffId() staffId: number,
+    @CurrentUser() user: any,
   ) {
+    const po = await this.poService.findOne(id);
+    const current = po.status as PoStatusType;
+    // TECHNICIAN hanya boleh DRAFT -> REQUESTED (minta approval) dan DRAFT CANCEL
+    if (user?.role === 'TECHNICIAN') {
+      const allowed =
+        (current === 'DRAFT' && (status === 'REQUESTED' || status === 'CANCELLED'));
+      if (!allowed) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { ForbiddenException } = await import('@nestjs/common');
+        throw new ForbiddenException('Akses ditolak: teknisi hanya boleh minta approval (DRAFT → REQUESTED).');
+      }
+    }
     return this.poService.updateStatus(id, status, staffId ?? performedBy);
   }
 

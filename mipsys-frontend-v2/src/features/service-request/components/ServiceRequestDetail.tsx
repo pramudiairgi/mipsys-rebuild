@@ -511,7 +511,7 @@ const ServiceRequestDetail = () => {
                             dispatch({ type: 'showDiagnosis', payload: true })
                           }
                         >
-                          DIAGNOSA
+                          TAMBAH PART
                         </Button>
                       )}
 

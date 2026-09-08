@@ -18,6 +18,8 @@ interface PODetailModalProps {
 
 export function PODetailModal({ poId, onClose, onRefresh }: PODetailModalProps) {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+  const isTechnician = user?.role === 'TECHNICIAN';
   const [po, setPo] = useState<PurchaseOrder | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showReceiving, setShowReceiving] = useState(false);
@@ -68,16 +70,18 @@ export function PODetailModal({ poId, onClose, onRefresh }: PODetailModalProps) 
   const totalReceived = po.items?.reduce((sum, i) => sum + (i.receivedQty || 0), 0) ?? 0;
   const totalOrdered = po.items?.reduce((sum, i) => sum + i.quantity, 0) ?? 0;
 
-  const statusActions: Record<string, { label: string; handler: () => void } | null> = {
-    DRAFT: { label: 'Minta Approval', handler: () => handleStatusChange('REQUESTED') },
-    REQUESTED: { label: 'Setujui', handler: () => handleStatusChange('APPROVED') },
-    APPROVED: { label: 'Pesan ke Pusat', handler: () => handleStatusChange('ORDERED') },
-    ORDERED: { label: 'Tandai Dikirim', handler: () => handleStatusChange('SHIPPED') },
+  const statusActions: Record<string, { label: string; handler: () => void; roles: string[] } | null> = {
+    DRAFT: { label: 'Minta Approval', handler: () => handleStatusChange('REQUESTED'), roles: ['ADMIN', 'TECHNICIAN'] },
+    REQUESTED: { label: 'Setujui', handler: () => handleStatusChange('APPROVED'), roles: ['ADMIN'] },
+    APPROVED: { label: 'Pesan ke Pusat', handler: () => handleStatusChange('ORDERED'), roles: ['ADMIN'] },
+    ORDERED: { label: 'Tandai Dikirim', handler: () => handleStatusChange('SHIPPED'), roles: ['ADMIN'] },
   };
 
-  const primaryAction = statusActions[po.status];
-  const canReceive = po.status === 'SHIPPED' || po.status === 'PARTIALLY_RECEIVED';
-  const canCancel = !['RECEIVED', 'CANCELLED'].includes(po.status);
+  const rawAction = statusActions[po.status];
+  const primaryAction =
+    rawAction && rawAction.roles.includes(user?.role ?? '') ? rawAction : null;
+  const canReceive = isAdmin && (po.status === 'SHIPPED' || po.status === 'PARTIALLY_RECEIVED');
+  const canCancel = isAdmin && !['RECEIVED', 'CANCELLED'].includes(po.status);
 
   return (
     <>
