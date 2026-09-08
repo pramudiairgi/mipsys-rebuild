@@ -18,28 +18,31 @@ import { RecordPaymentDto } from './dto/record-payment.dto';
 
 @ApiTags('Finance')
 @ApiBearerAuth('access-token')
-@Roles('ADMIN')
 @Controller('finance')
 export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}
 
   @Get('invoices')
+  @Roles('ADMIN')
   async findAll(@Query() query: QueryInvoiceDto) {
     return this.financeService.findAll(query.search, query.status);
   }
 
   @Get('invoices/:id')
+  @Roles('ADMIN')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.financeService.findOne(id);
   }
 
   @Post('invoices')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateInvoiceDto) {
     return this.financeService.create(dto);
   }
 
   @Post('invoices/:id/pay')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.CREATED)
   async recordPayment(
     @Param('id', ParseIntPipe) id: number,
@@ -49,16 +52,19 @@ export class FinanceController {
   }
 
   @Patch('invoices/:id/void')
+  @Roles('ADMIN')
   async voidInvoice(@Param('id', ParseIntPipe) id: number) {
     return this.financeService.voidInvoice(id);
   }
 
   @Get('stats')
+  @Roles('ADMIN', 'TECHNICIAN')
   async getStats() {
     return this.financeService.getStats();
   }
 
   @Post('invoices/from-sr/:ticketNumber')
+  @Roles('ADMIN')
   async generateFromSR(@Param('ticketNumber') ticketNumber: string) {
     return this.financeService.generateFromServiceRequest(ticketNumber);
   }

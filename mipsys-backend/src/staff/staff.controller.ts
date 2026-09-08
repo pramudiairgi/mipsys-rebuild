@@ -19,33 +19,37 @@ import { UpdateStaffDto } from './dto/update-staff.dto';
 
 @ApiTags('Staff')
 @ApiBearerAuth('access-token')
-@Roles('ADMIN')
 @Controller('staff')
 export class StaffController {
   constructor(private readonly service: StaffService) {}
 
   @Get()
+  @Roles('ADMIN')
   async findAll() {
     return this.service.findAll();
   }
 
   @Get('count')
+  @Roles('ADMIN', 'TECHNICIAN')
   async count(@Query('role') role?: string) {
     return this.service.count(role);
   }
 
   @Get(':id')
+  @Roles('ADMIN')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);
   }
 
   @Post()
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateStaffDto) {
     return this.service.create(dto);
   }
 
   @Patch(':id')
+  @Roles('ADMIN')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateStaffDto
@@ -54,6 +58,7 @@ export class StaffController {
   }
 
   @Delete(':id')
+  @Roles('ADMIN')
   async remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);
   }
