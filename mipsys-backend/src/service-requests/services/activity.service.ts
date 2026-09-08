@@ -1,8 +1,8 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { desc } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../../database/schema';
-import { serviceLogs } from '../../database/schema';
+import { serviceLogs, staff } from '../../database/schema';
 import { DrizzleTx } from '../../database/types';
 
 @Injectable()
@@ -22,8 +22,11 @@ export class ServiceRequestActivityService {
           description: serviceLogs.description,
           createdAt: serviceLogs.createdAt,
           performedBy: serviceLogs.performedBy,
+          staffName: staff.name,
+          staffRole: staff.role,
         })
         .from(serviceLogs)
+        .leftJoin(staff, eq(serviceLogs.performedBy, staff.id))
         .limit(10)
         .orderBy(desc(serviceLogs.createdAt));
 
@@ -34,7 +37,10 @@ export class ServiceRequestActivityService {
               minute: '2-digit',
             })
           : '',
-        user: `Staff #${log.performedBy || '-'}`,
+        user: log.staffName ?? (log.performedBy ? `Staff #${log.performedBy}` : 'Sistem'),
+        staffName: log.staffName,
+        staffRole: log.staffRole,
+        performedBy: log.performedBy,
         task: log.description || log.action,
         status:
           log.action?.includes('DONE') || log.action?.includes('COMPLETED')

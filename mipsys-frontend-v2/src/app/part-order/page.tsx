@@ -13,6 +13,7 @@ import {
   RefreshCcw,
   Eye,
 } from 'lucide-react';
+import { useAuth } from '@/src/lib/auth-context';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Card, CardContent } from '@/src/components/ui/card';
@@ -31,6 +32,8 @@ import type { PurchaseOrder, PoStatus } from '@/src/features/part-order/types';
 const PENDING_STATUSES: PoStatus[] = ['DRAFT', 'REQUESTED', 'APPROVED', 'ORDERED'];
 
 export default function PartOrderPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const { data: orders, isLoading, refetch } = usePurchaseOrders();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<PoStatus | 'ALL'>('ALL');
@@ -131,7 +134,7 @@ export default function PartOrderPage() {
       headerClassName: 'text-center',
       cell: (order) => (
         <div className="flex items-center justify-center gap-2">
-          {order.status === 'DRAFT' && (
+          {isAdmin && order.status === 'DRAFT' && (
             <Link href={`/part-order/new?id=${order.id}`}>
               <Button
                 variant="ghost"
@@ -176,11 +179,13 @@ export default function PartOrderPage() {
               aria-hidden="true"
             />
           </Button>
-          <Link href="/part-order/new">
-            <Button className="bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-[var(--primary-foreground)] font-black px-6 py-6 rounded-2xl shadow-xl shadow-primary/20 transition-all flex gap-2 uppercase text-xs tracking-widest border-none">
-              <Plus size={18} strokeWidth={3} /> Buat Order Baru
-            </Button>
-          </Link>
+          {isAdmin && (
+            <Link href="/part-order/new">
+              <Button className="bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-[var(--primary-foreground)] font-black px-6 py-6 rounded-2xl shadow-xl shadow-primary/20 transition-all flex gap-2 uppercase text-xs tracking-widest border-none">
+                <Plus size={18} strokeWidth={3} /> Buat Order Baru
+              </Button>
+            </Link>
+          )}
         </div>
       </PageHeader>
 

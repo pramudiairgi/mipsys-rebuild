@@ -5,6 +5,7 @@ import { Search, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
+import { useAuth } from '@/src/lib/auth-context';
 
 const statusFilters = [
   { value: 'ALL', label: 'Semua' },
@@ -31,6 +32,8 @@ export const SrFilterBar = React.memo(function SrFilterBar({
   activeFilter,
   onFilterChange,
 }: SrFilterBarProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   return (
     <div className="space-y-4">
       <form onSubmit={onSearch} className="flex items-center gap-3">
@@ -43,15 +46,17 @@ export const SrFilterBar = React.memo(function SrFilterBar({
             className="w-full h-12 pl-11 rounded-2xl"
           />
         </div>
-        <Link href="/service-request/new">
-          <Button
-            type="button"
-            className="bg-[var(--primary)] hover:bg-[var(--primary)]/90 h-12 px-6 rounded-2xl text-xs font-black tracking-widest text-[var(--primary-foreground)] flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98] border-0"
-          >
-            <Plus size={18} strokeWidth={3} aria-hidden="true" />
-            BUAT SR BARU
-          </Button>
-        </Link>
+        {isAdmin && (
+          <Link href="/service-request/new">
+            <Button
+              type="button"
+              className="bg-[var(--primary)] hover:bg-[var(--primary)]/90 h-12 px-6 rounded-2xl text-xs font-black tracking-widest text-[var(--primary-foreground)] flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98] border-0"
+            >
+              <Plus size={18} strokeWidth={3} aria-hidden="true" />
+              BUAT SR BARU
+            </Button>
+          </Link>
+        )}
       </form>
 
       <div className="flex flex-wrap gap-2">

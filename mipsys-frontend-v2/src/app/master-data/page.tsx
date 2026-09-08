@@ -25,6 +25,7 @@ import ConfirmModal from '@/src/components/ui/confirm-modal';
 import { toast } from 'react-hot-toast';
 import { masterDataApi } from '@/src/features/master-data/api/master-data-api';
 import type { CustomerData, StaffData, ProductData, CategoryModelData } from '@/src/features/master-data/api/master-data-api';
+import { useAuth } from '@/src/lib/auth-context';
 
 type TabType = 'customers' | 'staff' | 'products' | 'category-models';
 
@@ -42,6 +43,8 @@ const tabs = [
 ];
 
 export default function MasterDataPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('customers');
   const [searchTerm, setSearchTerm] = useState('');
@@ -264,16 +267,17 @@ export default function MasterDataPage() {
         {
           header: 'Aksi',
           headerClassName: 'text-center',
-          cell: (c: CustomerData) => (
-            <div className="flex items-center justify-center gap-2">
-              <Button onClick={() => openEdit(c)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]" aria-label="Edit data">
-                <Pencil size={16} aria-hidden="true" />
-              </Button>
-              <Button onClick={() => handleDelete(c.id)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--destructive)] hover:text-[var(--destructive-foreground)]" aria-label="Hapus data">
-                <Trash2 size={16} aria-hidden="true" />
-              </Button>
-            </div>
-          ),
+          cell: (c: CustomerData) =>
+            isAdmin ? (
+              <div className="flex items-center justify-center gap-2">
+                <Button onClick={() => openEdit(c)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]" aria-label="Edit data">
+                  <Pencil size={16} aria-hidden="true" />
+                </Button>
+                <Button onClick={() => handleDelete(c.id)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--destructive)] hover:text-[var(--destructive-foreground)]" aria-label="Hapus data">
+                  <Trash2 size={16} aria-hidden="true" />
+                </Button>
+              </div>
+            ) : null,
         },
       ];
     }
@@ -294,16 +298,17 @@ export default function MasterDataPage() {
         {
           header: 'Aksi',
           headerClassName: 'text-center',
-          cell: (s: StaffData) => (
-            <div className="flex items-center justify-center gap-2">
-              <Button onClick={() => openEdit(s)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]" aria-label="Edit data">
-                <Pencil size={16} aria-hidden="true" />
-              </Button>
-              <Button onClick={() => handleDelete(s.id)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--destructive)] hover:text-[var(--destructive-foreground)]" aria-label="Hapus data">
-                <Trash2 size={16} aria-hidden="true" />
-              </Button>
-            </div>
-          ),
+          cell: (s: StaffData) =>
+            isAdmin ? (
+              <div className="flex items-center justify-center gap-2">
+                <Button onClick={() => openEdit(s)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]" aria-label="Edit data">
+                  <Pencil size={16} aria-hidden="true" />
+                </Button>
+                <Button onClick={() => handleDelete(s.id)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--destructive)] hover:text-[var(--destructive-foreground)]" aria-label="Hapus data">
+                  <Trash2 size={16} aria-hidden="true" />
+                </Button>
+              </div>
+            ) : null,
         },
       ];
     }
@@ -320,16 +325,17 @@ export default function MasterDataPage() {
         {
           header: 'Aksi',
           headerClassName: 'text-center',
-          cell: (p: ProductData) => (
-            <div className="flex items-center justify-center gap-2">
-              <Button onClick={() => openEdit(p)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]" aria-label="Edit data">
-                <Pencil size={16} aria-hidden="true" />
-              </Button>
-              <Button onClick={() => handleDelete(p.id)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--destructive)] hover:text-[var(--destructive-foreground)]" aria-label="Hapus data">
-                <Trash2 size={16} aria-hidden="true" />
-              </Button>
-            </div>
-          ),
+          cell: (p: ProductData) =>
+            isAdmin ? (
+              <div className="flex items-center justify-center gap-2">
+                <Button onClick={() => openEdit(p)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]" aria-label="Edit data">
+                  <Pencil size={16} aria-hidden="true" />
+                </Button>
+                <Button onClick={() => handleDelete(p.id)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--destructive)] hover:text-[var(--destructive-foreground)]" aria-label="Hapus data">
+                  <Trash2 size={16} aria-hidden="true" />
+                </Button>
+              </div>
+            ) : null,
         },
       ];
     }
@@ -345,16 +351,17 @@ export default function MasterDataPage() {
       {
         header: 'Aksi',
         headerClassName: 'text-center',
-        cell: (m: CategoryModelData) => (
-          <div className="flex items-center justify-center gap-2">
+        cell: (m: CategoryModelData) =>
+          isAdmin ? (
+            <div className="flex items-center justify-center gap-2">
               <Button onClick={() => openEdit(m)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]" aria-label="Edit data">
                 <Pencil size={16} aria-hidden="true" />
               </Button>
               <Button onClick={() => handleDelete(m.id)} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-[var(--muted)]/50 text-[var(--muted-foreground)] hover:bg-[var(--destructive)] hover:text-[var(--destructive-foreground)]" aria-label="Hapus data">
                 <Trash2 size={16} aria-hidden="true" />
               </Button>
-          </div>
-        ),
+            </div>
+          ) : null,
       },
     ];
   };
@@ -399,9 +406,11 @@ export default function MasterDataPage() {
           onChange={setSearchTerm}
           placeholder={`Cari ${activeTab === 'customers' ? 'pelanggan' : activeTab === 'staff' ? 'staff' : activeTab === 'products' ? 'produk' : 'model'}...`}
         />
-        <Button onClick={openCreate} className="bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-[var(--primary-foreground)] font-black px-6 py-6 rounded-2xl shadow-lg flex gap-2 uppercase text-xs tracking-widest border-none shrink-0">
-          <Plus size={16} strokeWidth={3} aria-hidden="true" /> Tambah Data
-        </Button>
+        {isAdmin && (
+          <Button onClick={openCreate} className="bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-[var(--primary-foreground)] font-black px-6 py-6 rounded-2xl shadow-lg flex gap-2 uppercase text-xs tracking-widest border-none shrink-0">
+            <Plus size={16} strokeWidth={3} aria-hidden="true" /> Tambah Data
+          </Button>
+        )}
       </div>
 
       <DataTable

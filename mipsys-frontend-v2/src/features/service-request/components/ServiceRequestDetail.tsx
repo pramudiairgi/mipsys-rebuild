@@ -392,19 +392,21 @@ const ServiceRequestDetail = () => {
             </div>
           </div>
 
-          <Button
-            variant={state.isEditing ? 'secondary' : 'outline'}
-            size="lg"
-            onClick={handleEditToggle}
-            className="gap-2 px-6 h-11 rounded-xl text-[10px] font-black tracking-widest shrink-0"
-          >
-            {state.isEditing ? (
-              <X size={14} aria-hidden="true" />
-            ) : (
-              <Edit3 size={14} aria-hidden="true" />
-            )}
-            {state.isEditing ? 'CANCEL' : 'EDIT TICKET'}
-          </Button>
+          {isAdmin && (
+            <Button
+              variant={state.isEditing ? 'secondary' : 'outline'}
+              size="lg"
+              onClick={handleEditToggle}
+              className="gap-2 px-6 h-11 rounded-xl text-[10px] font-black tracking-widest shrink-0"
+            >
+              {state.isEditing ? (
+                <X size={14} aria-hidden="true" />
+              ) : (
+                <Edit3 size={14} aria-hidden="true" />
+              )}
+              {state.isEditing ? 'CANCEL' : 'EDIT TICKET'}
+            </Button>
+          )}
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -476,23 +478,27 @@ const ServiceRequestDetail = () => {
                   {(data.statusService === 'WAITING_CHECK' ||
                     data.statusService === 'CHECK') && (
                     <>
-                      <Button
-                        className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
-                        onClick={() =>
-                          dispatch({ type: 'showDiagnosis', payload: true })
-                        }
-                      >
-                        DIAGNOSA & UPDATE STATUS
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2"
-                        onClick={() =>
-                          dispatch({ type: 'showCancelConfirm', payload: true })
-                        }
-                      >
-                        <Ban size={14} aria-hidden="true" /> BATALKAN
-                      </Button>
+                      {isTechnician && (
+                        <Button
+                          className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
+                          onClick={() =>
+                            dispatch({ type: 'showDiagnosis', payload: true })
+                          }
+                        >
+                          DIAGNOSA & UPDATE STATUS
+                        </Button>
+                      )}
+                      {isAdmin && (
+                        <Button
+                          variant="destructive"
+                          className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2"
+                          onClick={() =>
+                            dispatch({ type: 'showCancelConfirm', payload: true })
+                          }
+                        >
+                          <Ban size={14} aria-hidden="true" /> BATALKAN
+                        </Button>
+                      )}
                     </>
                   )}
 
@@ -546,55 +552,59 @@ const ServiceRequestDetail = () => {
                             <FileText size={14} aria-hidden="true" /> CETAK
                             PENAWARAN
                           </Button>
-                          <Button
-                            className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
-                            onClick={() =>
-                              dispatch({
-                                type: 'showApproveConfirm',
-                                payload: true,
-                              })
-                            }
-                            disabled={state.isApproving}
-                          >
-                            {state.isApproving ? (
-                              <Loader2
-                                className="motion-safe:animate-spin"
-                                size={14}
-                                aria-hidden="true"
-                              />
-                            ) : (
-                              <CheckCircle2 size={14} aria-hidden="true" />
-                            )}
-                            SETUJUI
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2"
-                            onClick={() =>
-                              dispatch({
-                                type: 'showCancelConfirm',
-                                payload: true,
-                              })
-                            }
-                            disabled={state.isCancelling}
-                          >
-                            {state.isCancelling ? (
-                              <Loader2
-                                className="motion-safe:animate-spin"
-                                size={14}
-                                aria-hidden="true"
-                              />
-                            ) : (
-                              <Ban size={14} aria-hidden="true" />
-                            )}
-                            BATALKAN
-                          </Button>
+                          {isAdmin && (
+                            <Button
+                              className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
+                              onClick={() =>
+                                dispatch({
+                                  type: 'showApproveConfirm',
+                                  payload: true,
+                                })
+                              }
+                              disabled={state.isApproving}
+                            >
+                              {state.isApproving ? (
+                                <Loader2
+                                  className="motion-safe:animate-spin"
+                                  size={14}
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <CheckCircle2 size={14} aria-hidden="true" />
+                              )}
+                              SETUJUI
+                            </Button>
+                          )}
+                          {isAdmin && (
+                            <Button
+                              variant="destructive"
+                              className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2"
+                              onClick={() =>
+                                dispatch({
+                                  type: 'showCancelConfirm',
+                                  payload: true,
+                                })
+                              }
+                              disabled={state.isCancelling}
+                            >
+                              {state.isCancelling ? (
+                                <Loader2
+                                  className="motion-safe:animate-spin"
+                                  size={14}
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <Ban size={14} aria-hidden="true" />
+                              )}
+                              BATALKAN
+                            </Button>
+                          )}
                         </>
                       )}
                     </>
                   )}
 
-                  {data.statusService === 'SERVICE' && (
+                  {isTechnician && data.statusService === 'SERVICE' && (
                     <Button
                       className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
                       onClick={handleMarkDone}
@@ -613,7 +623,7 @@ const ServiceRequestDetail = () => {
                     </Button>
                   )}
 
-                  {data.statusService === 'AWAITING_PARTS' && (
+                  {isAdmin && data.statusService === 'AWAITING_PARTS' && (
                     <div className="space-y-3">
                       <div className="p-3 rounded-xl bg-amber-500/10 border-2 border-amber-500/30 text-center">
                         <p className="text-[10px] font-bold text-amber-400">
@@ -767,7 +777,7 @@ const ServiceRequestDetail = () => {
                   </div>
                 </CardContent>
 
-                {state.isEditing && (
+                {isAdmin && state.isEditing && (
                   <CardContent className="!p-0 pt-2">
                     <Button
                       className="w-full h-12 rounded-xl text-[10px] font-black tracking-[0.3em] bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"

@@ -23,6 +23,7 @@ import { financeApi } from './api/finance-api';
 import { Invoice, PaymentHistory } from './types';
 import { ConfirmDialog } from '@/src/components/ui/confirm-dialog';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '@/src/lib/auth-context';
 
 const statusStyles: Record<string, string> = {
   PAID: 'bg-[var(--accent)]/15 text-[var(--accent)] border-accent/30',
@@ -32,6 +33,8 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function FinancePage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const searchParams = useSearchParams();
   const router = useRouter();
   const [search, setSearch] = useState(searchParams.get('search') || '');
@@ -145,7 +148,7 @@ export default function FinancePage() {
           >
             <Eye size={16} aria-hidden="true" />
           </Button>
-          {inv.status === 'UNPAID' && (
+          {isAdmin && inv.status === 'UNPAID' && (
             <>
               <Button
                 variant="ghost"

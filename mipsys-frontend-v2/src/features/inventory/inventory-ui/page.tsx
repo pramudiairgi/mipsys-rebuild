@@ -13,6 +13,7 @@ import { Button } from '@/src/components/ui/button';
 import { PageHeader } from '@/src/components/ui/page-header';
 import { SearchBar } from '@/src/components/ui/search-bar';
 import { DataTable } from '@/src/components/ui/data-table';
+import { useAuth } from '@/src/lib/auth-context';
 import type { Column } from '@/src/components/ui/data-table';
 import { partsApi } from '@/src/features/inventory/services/parts-api';
 import { SparePart } from '@/src/features/inventory/types';
@@ -20,6 +21,8 @@ import { AddStockModal } from '@/src/features/inventory/inventory-ui/AddStockMod
 import { toast } from 'react-hot-toast';
 
 export default function InventoryPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [parts, setParts] = useState<SparePart[]>([]);
   const [search, setSearch] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -165,14 +168,16 @@ export default function InventoryPage() {
       headerClassName: 'text-center',
       cell: (part) => (
         <div className="flex justify-center">
-          <Button
-            onClick={() => handleRestockClick(part)}
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 text-xs font-black uppercase rounded-lg"
-          >
-            <PackagePlus size={14} aria-hidden="true" /> + Stok
-          </Button>
+          {isAdmin && (
+            <Button
+              onClick={() => handleRestockClick(part)}
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-xs font-black uppercase rounded-lg"
+            >
+              <PackagePlus size={14} aria-hidden="true" /> + Stok
+            </Button>
+          )}
         </div>
       ),
     },

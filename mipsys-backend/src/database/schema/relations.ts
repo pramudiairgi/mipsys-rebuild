@@ -4,6 +4,7 @@ import {
   customers,
   products,
   staff,
+  serviceLogs,
 } from './service-request.schema';
 import { orderParts, spareParts } from './spare-part.schema';
 import { categoryModels } from './category-model.schema';
@@ -133,5 +134,16 @@ export const expensesRelations = relations(expenses, ({ one }) => ({
   createdByStaff: one(staff, {
     fields: [expenses.createdBy],
     references: [staff.id],
+  }),
+}));
+
+export const serviceLogsRelations = relations(serviceLogs, ({ one }) => ({
+  performedByStaff: one(staff, {
+    fields: [serviceLogs.performedBy],
+    references: [staff.id],
+  }),
+  serviceRequest: one(serviceRequests, {
+    fields: [serviceLogs.serviceRequestId],
+    references: [serviceRequests.id],
   }),
 }));

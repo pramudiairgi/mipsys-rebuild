@@ -277,7 +277,12 @@ export default function DashboardPage() {
                       </TableCell>
                       <TableCell>{getIcon(log.status)}</TableCell>
                       <TableCell className="font-bold text-xs uppercase tracking-tight">
-                        {log.user}
+                        {log.staffName ?? log.user}
+                        {log.staffRole && (
+                          <span className="ml-1 text-[9px] font-normal normal-case text-muted-foreground">
+                            ({log.staffRole})
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-muted-foreground italic text-xs">
                         {log.task}

@@ -37,6 +37,7 @@ import { Button } from '@/src/components/ui/button';
 export function CreateSRForm() {
   const router = useRouter();
   const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<SRFormValues>({
@@ -279,23 +280,29 @@ export function CreateSRForm() {
             </div>
           </section>
 
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="w-full md:w-auto h-14 px-12 font-black text-lg rounded-2xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
-          >
-            {isLoading ? (
-              <Loader2
-                className="w-5 h-5 motion-safe:animate-spin"
-                aria-hidden="true"
-              />
-            ) : (
-              <>
-                SIMPAN TIKET
+          {isAdmin ? (
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full md:w-auto h-14 px-12 font-black text-lg rounded-2xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
+            >
+              {isLoading ? (
+                <Loader2
+                  className="w-5 h-5 motion-safe:animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <>
+                  SIMPAN TIKET
                 <ChevronRight size={20} aria-hidden="true" />
               </>
             )}
-          </Button>
+            </Button>
+          ) : (
+            <p className="text-sm font-bold text-muted-foreground text-center py-4 border border-dashed rounded-xl">
+              Hanya admin dapat membuat tiket
+            </p>
+          )}
         </form>
       </Form>
     </div>
