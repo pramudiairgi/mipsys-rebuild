@@ -639,54 +639,62 @@ const ServiceRequestDetail = () => {
                     </div>
                   )}
 
-                  {data.statusService === 'DONE' && !state.hasInvoice && (
-                    <Button
-                      className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
-                      onClick={handleCreateInvoice}
-                      disabled={state.isCreatingInvoice}
-                    >
-                      {state.isCreatingInvoice ? (
-                        <Loader2
-                          className="motion-safe:animate-spin"
-                          size={14}
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <FileDown size={14} aria-hidden="true" />
-                      )}
-                      BUAT INVOICE
-                    </Button>
-                  )}
-
-                  {data.statusService === 'DONE' && state.hasInvoice && (
-                    <Link href="/finance">
-                      <Button className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25">
-                        <FileText size={14} aria-hidden="true" /> LIHAT INVOICE
+                  {isAdmin &&
+                    (data.statusService === 'DONE' ||
+                      data.statusService === 'READY') &&
+                    !state.hasInvoice && (
+                      <Button
+                        className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
+                        onClick={handleCreateInvoice}
+                        disabled={state.isCreatingInvoice}
+                      >
+                        {state.isCreatingInvoice ? (
+                          <Loader2
+                            className="motion-safe:animate-spin"
+                            size={14}
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <FileDown size={14} aria-hidden="true" />
+                        )}
+                        BUAT INVOICE
                       </Button>
-                    </Link>
-                  )}
+                    )}
 
-                  {(data.statusService === 'DONE' ||
-                    data.statusService === 'CANCEL') && (
-                    <Button
-                      className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
-                      onClick={() =>
-                        dispatch({ type: 'showCloseConfirm', payload: true })
-                      }
-                      disabled={state.isClosing}
-                    >
-                      {state.isClosing ? (
-                        <Loader2
-                          className="motion-safe:animate-spin"
-                          size={14}
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <DoorClosed size={14} aria-hidden="true" />
-                      )}
-                      TUTUP TIKET
-                    </Button>
-                  )}
+                  {isAdmin &&
+                    (data.statusService === 'DONE' ||
+                      data.statusService === 'READY') &&
+                    state.hasInvoice && (
+                      <Link href="/finance">
+                        <Button className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25">
+                          <FileText size={14} aria-hidden="true" /> LIHAT INVOICE
+                        </Button>
+                      </Link>
+                    )}
+
+                  {isAdmin &&
+                    (data.statusService === 'DONE' ||
+                      data.statusService === 'READY' ||
+                      data.statusService === 'CANCEL') && (
+                      <Button
+                        className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
+                        onClick={() =>
+                          dispatch({ type: 'showCloseConfirm', payload: true })
+                        }
+                        disabled={state.isClosing}
+                      >
+                        {state.isClosing ? (
+                          <Loader2
+                            className="motion-safe:animate-spin"
+                            size={14}
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <DoorClosed size={14} aria-hidden="true" />
+                        )}
+                        TUTUP TIKET
+                      </Button>
+                    )}
                 </CardContent>
 
                 <div className="border-t border-border/10 !mx-0 my-4" />

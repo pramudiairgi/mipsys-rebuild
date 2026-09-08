@@ -39,6 +39,7 @@ import { Button } from '@/src/components/ui/button';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [activities, setActivities] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
   const [stats, setStats] = useState({
@@ -60,17 +61,30 @@ export default function DashboardPage() {
 
   const fetchData = async () => {
     try {
-      const [logsData, statsData, financeData, customerCount, techCount] =
-        await Promise.all([
-          srApi.getActivities(),
-          srApi.getDashboardStats(),
-          apiClient.get('/finance/stats').then((r) => r.data),
-          apiClient.get('/customers/count').then((r) => r.data),
-          apiClient.get('/staff/count', { params: { role: 'TECHNICIAN' } }).then((r) => r.data),
-        ]);
+      const basePromises = [
+        srApi.getActivities(),
+        srApi.getDashboardStats(),
+      ] as const;
+      const adminPromises = isAdmin
+        ? [
+            apiClient.get('/finance/stats').then((r) => r.data),
+            apiClient.get('/customers/count').then((r) => r.data),
+            apiClient.get('/staff/count', { params: { role: 'TECHNICIAN' } }).then((r) => r.data),
+          ]
+        : [];
+      const results = await Promise.all([...basePromises, ...adminPromises]);
+      const [logsData, statsData, financeData, customerCount, techCount] = [
+        results[0],
+        results[1],
+        ...(isAdmin ? [results[2], results[3], results[4]] : [null, null, null]),
+      ] as any;
       setActivities(logsData);
-      setStats({ ...statsData, customers: customerCount.count, technicians: techCount.count });
-      setFinanceStats(financeData);
+      if (isAdmin) {
+        setStats({ ...statsData, customers: customerCount.count, technicians: techCount.count });
+        setFinanceStats(financeData);
+      } else {
+        setStats(statsData);
+      }
     } catch (error: any) {
       toast.error('Gagal memuat data dashboard');
     } finally {
@@ -181,25 +195,27 @@ export default function DashboardPage() {
           </CardFooter>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="p-2.5 bg-primary/10 text-primary rounded-xl w-fit">
-              <Wallet size={20} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-display font-bold text-foreground tracking-tighter">
-              {billingRate}%
-            </p>
-            <p className="text-xs text-muted-foreground">Penagihan Selesai</p>
-          </CardContent>
-          <CardFooter>
-            <p className="micro-label text-accent flex items-center gap-1 bg-primary/10 w-fit px-2 py-0.5 rounded">
-              <TrendUp size={12} />{' '}
-              {financeStats.paidCount}/{financeStats.totalInvoices} faktur
-            </p>
-          </CardFooter>
-        </Card>
+        {isAdmin && (
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="p-2.5 bg-primary/10 text-primary rounded-xl w-fit">
+                <Wallet size={20} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-4xl font-display font-bold text-foreground tracking-tighter">
+                {billingRate}%
+              </p>
+              <p className="text-xs text-muted-foreground">Penagihan Selesai</p>
+            </CardContent>
+            <CardFooter>
+              <p className="micro-label text-accent flex items-center gap-1 bg-primary/10 w-fit px-2 py-0.5 rounded">
+                <TrendUp size={12} />{' '}
+                {financeStats.paidCount}/{financeStats.totalInvoices} faktur
+              </p>
+            </CardFooter>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="flex flex-row items-start justify-between pb-2">
@@ -274,39 +290,41 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="text-center">
-            <div className="w-12 h-12 bg-muted/50 rounded-xl flex items-center justify-center mx-auto mb-2">
-              <Users size={20} className="text-primary" />
-            </div>
-            <CardTitle>Database Overview</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-muted/30 p-3 rounded-xl text-center">
-                <p className="text-2xl font-display font-bold text-foreground tracking-tighter">
-                  {stats.customers}
-                </p>
-                <p className="micro-label text-muted-foreground mt-1">
-                  Pelanggan
-                </p>
+        {isAdmin && (
+          <Card>
+            <CardHeader className="text-center">
+              <div className="w-12 h-12 bg-muted/50 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <Users size={20} className="text-primary" />
               </div>
-              <div className="bg-muted/30 p-3 rounded-xl text-center">
-                <p className="text-2xl font-display font-bold text-foreground tracking-tighter">
-                  {stats.technicians}
-                </p>
-                <p className="micro-label text-muted-foreground mt-1">
-                  Teknisi
-                </p>
+              <CardTitle>Database Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-muted/30 p-3 rounded-xl text-center">
+                  <p className="text-2xl font-display font-bold text-foreground tracking-tighter">
+                    {stats.customers}
+                  </p>
+                  <p className="micro-label text-muted-foreground mt-1">
+                    Pelanggan
+                  </p>
+                </div>
+                <div className="bg-muted/30 p-3 rounded-xl text-center">
+                  <p className="text-2xl font-display font-bold text-foreground tracking-tighter">
+                    {stats.technicians}
+                  </p>
+                  <p className="micro-label text-muted-foreground mt-1">
+                    Teknisi
+                  </p>
+                </div>
               </div>
-            </div>
-                            <Link href="/master-data">
-                              <Button variant="outline" className="w-full">
-                                Kelola Database
-                              </Button>
-                            </Link>
-          </CardContent>
-        </Card>
+                              <Link href="/master-data">
+                                <Button variant="outline" className="w-full">
+                                  Kelola Database
+                                </Button>
+                              </Link>
+            </CardContent>
+          </Card>
+        )}
       </section>
 
       <footer className="pt-8 border-t border-border/20 flex flex-col md:flex-row justify-between items-center gap-4 micro-label text-muted-foreground text-center md:text-left">

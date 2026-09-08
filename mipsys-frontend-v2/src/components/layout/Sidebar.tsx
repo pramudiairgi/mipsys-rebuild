@@ -25,6 +25,7 @@ export function Sidebar({
   const router = useRouter();
   const { user, logout } = useAuth();
 
+  const isAdmin = user?.role === 'ADMIN';
   const menuItems = [
     { title: 'Dashboard', icon: <Layout size={20} />, link: '/' },
     {
@@ -42,16 +43,20 @@ export function Sidebar({
       icon: <ShoppingBag size={20} />,
       link: '/part-order',
     },
-    {
-      title: 'Finance & Billing',
-      icon: <Wallet size={20} />,
-      link: '/finance',
-    },
-    {
-      title: 'Master Database',
-      icon: <Users size={20} />,
-      link: '/master-data',
-    },
+    ...(isAdmin
+      ? [
+          {
+            title: 'Finance & Billing',
+            icon: <Wallet size={20} />,
+            link: '/finance',
+          },
+          {
+            title: 'Master Database',
+            icon: <Users size={20} />,
+            link: '/master-data',
+          },
+        ]
+      : []),
   ];
 
   return (
