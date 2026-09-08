@@ -9,8 +9,10 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { FinanceService } from './finance.service';
 import { CreateInvoiceDto, QueryInvoiceDto } from './dto/create-invoice.dto';
 import { RecordPaymentDto } from './dto/record-payment.dto';
@@ -29,6 +31,33 @@ export class FinanceController {
   @Get('invoices/:id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.financeService.findOne(id);
+  }
+
+  @Get('invoices/:id/export/xlsx')
+  async exportXlsx(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.financeService.exportXlsx(id);
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="invoice-${id}.xlsx"`,
+    });
+    res.end(buffer);
+  }
+
+  @Get('invoices/:id/export/pdf')
+  async exportPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.financeService.exportPdf(id);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="invoice-${id}.pdf"`,
+    });
+    res.end(buffer);
   }
 
   @Post('invoices')
