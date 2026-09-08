@@ -18,9 +18,16 @@ export interface InvoiceCalcResult {
   ppnRate: number;
 }
 
+export interface PpnConfig {
+  ppnRate: number;
+  ppnFormula?: string;
+  ppnRounding?: string;
+  ppnInclusive?: boolean;
+}
+
 export function calcInvoice(
   items: InvoiceCalcItem[],
-  ppnRate: number = 11,
+  ppnRateOrConfig: number | PpnConfig = 11,
 ): InvoiceCalcResult {
   const subtotal = items.reduce((sum, item) => {
     const qty = Number(item.qty) || 0;
@@ -28,10 +35,39 @@ export function calcInvoice(
     return sum + qty * price;
   }, 0);
 
-  const ppn = Math.round((subtotal * ppnRate) / 100);
-  const grandTotal = subtotal + ppn;
+  const cfg: PpnConfig = typeof ppnRateOrConfig === 'number' ? { ppnRate: ppnRateOrConfig } : ppnRateOrConfig;
+  const rate = Number(cfg.ppnRate ?? 11);
+  const formula = cfg.ppnFormula || 'EXCLUSIVE';
+  const rounding = cfg.ppnRounding || 'HALF_UP';
+  const inclusive = cfg.ppnInclusive ?? formula === 'INCLUSIVE';
 
-  return { subtotal, ppn, grandTotal, ppnRate };
+  let ppn: number;
+  let grandTotal: number;
+  if (inclusive) {
+    grandTotal = subtotal;
+    ppn = grandTotal * rate / (100 + rate);
+    if (rounding !== 'NONE') ppn = Number(ppn.toFixed(2));
+    grandTotal = Number(grandTotal.toFixed(2));
+  } else {
+    ppn = (subtotal * rate) / 100;
+    grandTotal = subtotal + ppn;
+    if (rounding !== 'NONE') {
+      ppn = Number(ppn.toFixed(2));
+      grandTotal = Number(grandTotal.toFixed(2));
+    }
+    ppn = Math.round(ppn);
+    grandTotal = Math.round(grandTotal);
+    if (rounding === 'NONE') {
+      ppn = (subtotal * rate) / 100;
+      grandTotal = subtotal + ppn;
+    }
+  }
+  if (rounding === 'HALF_UP' && !inclusive) {
+    ppn = Math.round((subtotal * rate) / 100);
+    grandTotal = subtotal + ppn;
+  }
+
+  return { subtotal, ppn, grandTotal, ppnRate: rate };
 }
 
 export function formatIDR(amount: number | string): string {

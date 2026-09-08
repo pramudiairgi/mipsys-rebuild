@@ -27,6 +27,7 @@ import { useAuth } from '@/src/lib/auth-context';
 import { srApi } from '@/src/features/service-request/api/sr-api';
 import { orderPartsApi } from '@/src/features/service-request/api/order-parts-api';
 import { OrderPart } from '@/src/features/service-request/api/order-parts-api';
+import { financeApi } from '@/src/features/finance/api/finance-api';
 
 interface ApproveQuoteModalProps {
   ticketNumber: string;
@@ -59,6 +60,7 @@ export function ApproveQuoteModal({
   const [serviceFee, setServiceFee] = useState<string>('0');
   const [savedServiceFee, setSavedServiceFee] = useState<number>(0);
   const [savedPartFee, setSavedPartFee] = useState<number>(0);
+  const [ppnConfig, setPpnConfig] = useState<{ ppnRate: number; ppnFormula: string; ppnRounding: string; ppnInclusive: boolean } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   const hasSavedQuote =
@@ -77,6 +79,7 @@ export function ApproveQuoteModal({
         setStep('form');
       }
       fetchProposedParts();
+      financeApi.getPpnConfig().then(setPpnConfig).catch(() => {});
     }
   }, [isOpen, serviceRequestId, initialServiceFee, initialPartFee, hasSavedQuote]);
 
@@ -104,9 +107,18 @@ export function ApproveQuoteModal({
   const totalPartCost = parts.reduce((sum, p) => sum + Number(p.priceAtAction ?? 0) * p.quantity, 0);
   const serviceFeeNum = parseInt(serviceFee) || 0;
   const grandTotal = totalPartCost + serviceFeeNum;
-  const PPN_RATE = 0.11;
-  const ppn = Math.round(grandTotal * PPN_RATE);
-  const totalAfterPpn = grandTotal + ppn;
+  const ppnRate = ppnConfig?.ppnRate ?? 11;
+  const ppnInclusive = ppnConfig?.ppnInclusive || ppnConfig?.ppnFormula === 'INCLUSIVE';
+  const ppnRounding = ppnConfig?.ppnRounding || 'HALF_UP';
+  let ppn: number;
+  let totalAfterPpn: number;
+  if (ppnInclusive) {
+    totalAfterPpn = grandTotal;
+    ppn = Number((grandTotal * ppnRate / (100 + ppnRate)).toFixed(2));
+  } else {
+    ppn = ppnRounding === 'NONE' ? grandTotal * ppnRate / 100 : Math.round(grandTotal * ppnRate / 100);
+    totalAfterPpn = grandTotal + ppn;
+  }
 
   async function handleSave() {
     if (!ticketNumber) return;
@@ -176,7 +188,7 @@ export function ApproveQuoteModal({
 
                     <PartsList parts={parts} isLoading={isLoadingParts} />
 
-                    <SummaryRow totalPartCost={totalPartCost} serviceFee={serviceFeeNum} />
+                    <SummaryRow totalPartCost={totalPartCost} serviceFee={serviceFeeNum} ppnConfig={ppnConfig} />
                   </div>
 
                   <FormFooter
@@ -198,6 +210,7 @@ export function ApproveQuoteModal({
                           parts={parts}
                           serviceFee={savedServiceFee}
                           partFee={savedPartFee}
+                          ppnConfig={ppnConfig || undefined}
                         />
                       </div>
                     </div>
@@ -340,13 +353,25 @@ function PartsList({
 function SummaryRow({
   totalPartCost,
   serviceFee,
+  ppnConfig,
 }: {
   totalPartCost: number;
   serviceFee: number;
+  ppnConfig?: { ppnRate: number; ppnFormula: string; ppnRounding: string; ppnInclusive: boolean } | null;
 }) {
   const subtotal = totalPartCost + serviceFee;
-  const ppn = Math.round(subtotal * 0.11);
-  const grandTotal = subtotal + ppn;
+  const rate = ppnConfig?.ppnRate ?? 11;
+  const inclusive = ppnConfig?.ppnInclusive || ppnConfig?.ppnFormula === 'INCLUSIVE';
+  const rounding = ppnConfig?.ppnRounding || 'HALF_UP';
+  let ppn: number;
+  let grandTotal: number;
+  if (inclusive) {
+    grandTotal = subtotal;
+    ppn = Number((grandTotal * rate / (100 + rate)).toFixed(2));
+  } else {
+    ppn = rounding === 'NONE' ? subtotal * rate / 100 : Math.round(subtotal * rate / 100);
+    grandTotal = subtotal + ppn;
+  }
 
   return (
     <div className="space-y-3 p-4 rounded-xl bg-[var(--muted)]/50 border border-border/30">
@@ -360,7 +385,7 @@ function SummaryRow({
       </div>
       <hr className="border-border/30" />
       <div className="flex justify-between items-center text-sm">
-        <span className="font-bold text-[var(--muted-foreground)]">PPN 11%</span>
+        <span className="font-bold text-[var(--muted-foreground)]">PPN {rate}%</span>
         <span className="font-black text-[var(--foreground)]">Rp {ppn.toLocaleString('id-ID')}</span>
       </div>
       <hr className="border-border/30" />

@@ -25,6 +25,7 @@ export interface InvoicePrintProps {
   customer: InvoicePrintCustomer;
   items: InvoicePrintItem[];
   ppnRate?: number;
+  ppnConfig?: { ppnRate: number; ppnFormula?: string; ppnRounding?: string; ppnInclusive?: boolean };
   paymentMethod?: 'CASH' | 'TRANSFER' | 'QRIS';
   notes?: string;
   companyName?: string;
@@ -42,6 +43,7 @@ export const InvoicePrintTemplate = React.forwardRef<HTMLDivElement, InvoicePrin
       customer,
       items,
       ppnRate = 11,
+      ppnConfig,
       paymentMethod,
       notes,
       companyName = 'MiPSys',
@@ -49,14 +51,13 @@ export const InvoicePrintTemplate = React.forwardRef<HTMLDivElement, InvoicePrin
       companyPhone = '(021) 1234-5678',
     } = props;
 
-    // Filter valid items (qty>0 or price>0) — zero hardcode fallback
     const validItems = (items || []).filter(
       (it) => it && typeof it.name === 'string' && it.name.trim().length > 0,
     );
 
     const { subtotal, ppn, grandTotal } = calcInvoice(
       validItems.map((it) => ({ qty: it.qty, unitPrice: it.unitPrice })),
-      ppnRate,
+      ppnConfig || ppnRate,
     );
 
     const ppnLabel = `PPN ${ppnRate}%`;

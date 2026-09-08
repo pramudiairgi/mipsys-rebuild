@@ -90,10 +90,8 @@ export class FinanceService {
     }
 
     const invoiceNumber = await this.generateInvoiceNumber();
-    const ppnRate = await this.getPpnRate();
-    const subtotal = dto.serviceFee + dto.partFee;
-    const ppn = subtotal * (ppnRate / 100);
-    const total = subtotal + ppn;
+    const ppnConfig = await this.getPpnConfig();
+    const { ppn, total, ppnRate } = this.calcPpnByConfig(dto.serviceFee + dto.partFee, ppnConfig);
 
     const [result] = await this.db
       .insert(invoices)
@@ -240,11 +238,8 @@ export class FinanceService {
 
     const partsCost = await this.orderPartsService.getTotalPartsCost(sr.id);
     const serviceFee = sr.serviceFee ?? 0;
-    const ppnRate = await this.getPpnRate();
-
-    const subtotal = serviceFee + partsCost;
-    const ppn = subtotal * (ppnRate / 100);
-    const total = subtotal + ppn;
+    const ppnConfig = await this.getPpnConfig();
+    const { ppn, total, ppnRate } = this.calcPpnByConfig(serviceFee + partsCost, ppnConfig);
 
     const invoiceNumber = await this.generateInvoiceNumber();
 
@@ -281,11 +276,11 @@ export class FinanceService {
   async exportXlsx(id: number): Promise<Buffer> {
     const invoice = await this.findOne(id);
 
-    const serviceFee = parseFloat(invoice.serviceFee || '0');
-    const partFee = parseFloat(invoice.partFee || '0');
-    const ppn = parseFloat(invoice.ppn || '0');
-    const total = parseFloat(invoice.total || '0');
-    const ppnRate = parseFloat(invoice.ppnRate || '11');
+    const serviceFee = Number(invoice.serviceFee ?? 0);
+    const partFee = Number(invoice.partFee ?? 0);
+    const ppn = Number(invoice.ppn ?? 0);
+    const total = Number(invoice.total ?? 0);
+    const ppnRate = Number(invoice.ppnRate ?? 11);
     const subtotal = serviceFee + partFee;
 
     const wb = new ExcelJS.Workbook();
@@ -422,7 +417,7 @@ export class FinanceService {
             tableData.push({ no: idx++, item: 'Biaya Jasa (Service Fee)', qty: 1, price: serviceFee, jumlah: serviceFee });
           }
           activeParts.forEach((p) => {
-            const price = parseFloat(p.priceAtAction || '0');
+            const price = Number(p.priceAtAction ?? 0);
             const qty = p.quantity || 0;
             tableData.push({ no: idx++, item: p.partName, qty, price, jumlah: price * qty });
           });
@@ -583,11 +578,11 @@ export class FinanceService {
   async exportPdf(id: number): Promise<Buffer> {
     const invoice = await this.findOne(id);
 
-    const serviceFee = parseFloat(invoice.serviceFee || '0');
-    const partFee = parseFloat(invoice.partFee || '0');
-    const ppn = parseFloat(invoice.ppn || '0');
-    const total = parseFloat(invoice.total || '0');
-    const ppnRate = parseFloat(invoice.ppnRate || '11');
+    const serviceFee = Number(invoice.serviceFee ?? 0);
+    const partFee = Number(invoice.partFee ?? 0);
+    const ppn = Number(invoice.ppn ?? 0);
+    const total = Number(invoice.total ?? 0);
+    const ppnRate = Number(invoice.ppnRate ?? 11);
     const subtotal = serviceFee + partFee;
 
     // Tabel per-item real untuk menu aksi invoice (fetch orderParts)
@@ -602,7 +597,7 @@ export class FinanceService {
             pdfTableRows.push({ no: String(idx++), item: 'Biaya Jasa (Service Fee)', qty: '1', harga: serviceFee, jml: serviceFee });
           }
           activeParts.forEach((p) => {
-            const price = parseFloat(p.priceAtAction || '0');
+            const price = Number(p.priceAtAction ?? 0);
             const qty = p.quantity || 0;
             pdfTableRows.push({ no: String(idx++), item: p.partName, qty: String(qty), harga: price, jml: price * qty });
           });
@@ -819,6 +814,41 @@ export class FinanceService {
       where: eq(financeSettings.key, 'ppn_rate'),
     });
     return setting ? parseFloat(setting.value) : 11;
+  }
+
+  private async getPpnConfig(): Promise<{ ppnRate: number; ppnFormula: string; ppnRounding: string; ppnInclusive: boolean }> {
+    const rows = await this.db.query.financeSettings.findMany({
+      where: sql`${financeSettings.key} LIKE 'ppn_%'`,
+    });
+    const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    return {
+      ppnRate: map['ppn_rate'] ? parseFloat(map['ppn_rate']) : 11,
+      ppnFormula: map['ppn_formula'] || 'EXCLUSIVE',
+      ppnRounding: map['ppn_rounding'] || 'HALF_UP',
+      ppnInclusive: map['ppn_inclusive'] === 'true',
+    };
+  }
+
+  private calcPpnByConfig(
+    subtotal: number,
+    cfg: { ppnRate: number; ppnFormula: string; ppnRounding: string; ppnInclusive: boolean },
+  ): { ppn: number; total: number; ppnRate: number } {
+    let ppn: number;
+    let total: number;
+    if (cfg.ppnInclusive || cfg.ppnFormula === 'INCLUSIVE') {
+      total = subtotal;
+      ppn = total * cfg.ppnRate / (100 + cfg.ppnRate);
+      if (cfg.ppnRounding !== 'NONE') ppn = Number(ppn.toFixed(2));
+      total = Number(total.toFixed(2));
+    } else {
+      ppn = subtotal * (cfg.ppnRate / 100);
+      total = subtotal + ppn;
+      if (cfg.ppnRounding !== 'NONE') {
+        ppn = Number(ppn.toFixed(2));
+        total = Number(total.toFixed(2));
+      }
+    }
+    return { ppn, total, ppnRate: cfg.ppnRate };
   }
 
   private async generateInvoiceNumber(): Promise<string> {

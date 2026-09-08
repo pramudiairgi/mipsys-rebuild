@@ -4,6 +4,7 @@ import { SettingsService } from './settings.service';
 import {
   UpdatePpnRateDto,
   UpdateInvoicePrefixDto,
+  UpdatePpnConfigDto,
 } from './dto/update-settings.dto';
 
 @ApiTags('Finance')
@@ -25,5 +26,15 @@ export class SettingsController {
   @Patch('invoice-prefix')
   async updateInvoicePrefix(@Body() dto: UpdateInvoicePrefixDto) {
     return this.settingsService.updateInvoicePrefix(dto.invoicePrefix);
+  }
+
+  @Get('ppn-config')
+  async getPpnConfig() {
+    return this.settingsService.getPpnConfig();
+  }
+
+  @Patch('ppn-config')
+  async updatePpnConfig(@Body() dto: UpdatePpnConfigDto) {
+    return this.settingsService.updatePpnConfig(dto);
   }
 }

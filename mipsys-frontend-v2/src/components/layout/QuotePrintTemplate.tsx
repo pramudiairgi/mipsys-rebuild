@@ -14,13 +14,16 @@ interface QuotePrintTemplateProps {
   parts: QuotePrintPart[];
   serviceFee: number;
   partFee: number;
+  ppnRate?: number;
+  ppnConfig?: { ppnRate: number; ppnFormula?: string; ppnRounding?: string; ppnInclusive?: boolean };
 }
 
 export const QuotePrintTemplate = React.forwardRef<
   HTMLDivElement,
   QuotePrintTemplateProps
 >((props, ref) => {
-  const { ticketNumber, parts, serviceFee, partFee } = props;
+  const { ticketNumber, parts, serviceFee, partFee, ppnRate = 11, ppnConfig } = props;
+  const cfg = ppnConfig || { ppnRate, ppnFormula: 'EXCLUSIVE', ppnRounding: 'HALF_UP', ppnInclusive: false };
 
   const crmData = {
     companyName: 'MiPSys',
@@ -35,8 +38,17 @@ export const QuotePrintTemplate = React.forwardRef<
   };
 
   const subtotal = partFee + serviceFee;
-  const ppn = Math.round(subtotal * 0.11);
-  const grandTotal = Math.round(subtotal * 1.11);
+  const rate = cfg.ppnRate ?? ppnRate;
+  const inclusive = cfg.ppnInclusive || cfg.ppnFormula === 'INCLUSIVE';
+  let ppn: number;
+  let grandTotal: number;
+  if (inclusive) {
+    grandTotal = subtotal;
+    ppn = Number((grandTotal * rate / (100 + rate)).toFixed(2));
+  } else {
+    ppn = cfg.ppnRounding === 'NONE' ? subtotal * rate / 100 : Math.round(subtotal * rate / 100);
+    grandTotal = subtotal + ppn;
+  }
 
   return (
     <div
@@ -187,7 +199,7 @@ export const QuotePrintTemplate = React.forwardRef<
           </span>
         </div>
         <div className="flex justify-between text-xs">
-          <span className="text-stone-500">PPN 11%</span>
+          <span className="text-stone-500">PPN {rate}%</span>
           <span className="font-semibold text-stone-900">
             Rp {ppn.toLocaleString('id-ID')}
           </span>
@@ -217,7 +229,7 @@ export const QuotePrintTemplate = React.forwardRef<
             </p>
             <ul className="text-[10px] text-stone-500 space-y-1 list-disc list-inside leading-relaxed">
               <li>Penawaran berlaku 7 hari sejak tanggal diterbitkan</li>
-              <li>Harga sudah termasuk PPN 11%</li>
+              <li>Harga sudah termasuk PPN {rate}%</li>
               <li>Pembayaran dilakukan di kasir sebelum unit diambil</li>
               <li>Garansi pekerjaan sesuai ketentuan yang berlaku</li>
             </ul>
