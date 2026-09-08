@@ -135,6 +135,8 @@ const ServiceRequestDetail = () => {
   const ticketNumber = params.id as string;
   const { data, setData, isLoading, refetch } = useServiceRequest(ticketNumber);
   const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+  const isTechnician = user?.role === 'TECHNICIAN';
   const [state, dispatch] = useReducer(detailReducer, INITIAL_STATE);
   const {
     parts,
@@ -496,26 +498,34 @@ const ServiceRequestDetail = () => {
 
                   {data.statusService === 'WAITING_APPROVE' && (
                     <>
-                      <Button
-                        className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
-                        onClick={() =>
-                          dispatch({ type: 'showDiagnosis', payload: true })
-                        }
-                      >
-                        DIAGNOSA
-                      </Button>
-
-                      {!hasSavedQuote ? (
+                      {isTechnician && (
                         <Button
-                          variant="default"
-                          className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
+                          className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
                           onClick={() =>
-                            dispatch({ type: 'showQuote', payload: true })
+                            dispatch({ type: 'showDiagnosis', payload: true })
                           }
                         >
-                          <FileText size={14} aria-hidden="true" /> BUAT
-                          PENAWARAN
+                          DIAGNOSA
                         </Button>
+                      )}
+
+                      {!hasSavedQuote ? (
+                        isAdmin ? (
+                          <Button
+                            variant="default"
+                            className="w-full h-12 rounded-xl text-[10px] font-black tracking-widest gap-2 bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25"
+                            onClick={() =>
+                              dispatch({ type: 'showQuote', payload: true })
+                            }
+                          >
+                            <FileText size={14} aria-hidden="true" /> BUAT
+                            PENAWARAN
+                          </Button>
+                        ) : (
+                          <p className="text-[10px] font-bold text-muted-foreground text-center py-2 border border-dashed rounded-xl">
+                            Menunggu admin buat penawaran
+                          </p>
+                        )
                       ) : (
                         <>
                           <div className="p-2.5 rounded-xl bg-[var(--primary)]/10 border-2 border-[var(--primary)]/30">

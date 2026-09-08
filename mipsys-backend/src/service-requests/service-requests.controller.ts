@@ -91,7 +91,7 @@ export class ServiceRequestsController {
   }
 
   @Post(':ticketNumber/save-quote')
-  @Roles('TECHNICIAN')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.OK)
   async saveQuote(
     @Param('ticketNumber') ticketNumber: string,
