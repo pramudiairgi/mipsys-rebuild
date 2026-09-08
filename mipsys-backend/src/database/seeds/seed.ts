@@ -924,6 +924,9 @@ async function runSeeder() {
     console.log('📦 Tahap 14: Finance Settings...');
     await db.insert(schema.financeSettings).values([
       { key: 'ppn_rate', value: '11', description: 'PPN rate percentage' },
+      { key: 'ppn_formula', value: 'EXCLUSIVE', description: 'PPN formula EXCLUSIVE/INCLUSIVE' },
+      { key: 'ppn_rounding', value: 'HALF_UP', description: 'PPN rounding HALF_UP/NONE' },
+      { key: 'ppn_inclusive', value: 'false', description: 'PPN inclusive flag' },
       {
         key: 'ticket_counter',
         value: '10',

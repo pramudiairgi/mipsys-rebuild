@@ -109,6 +109,14 @@ export const srApi = {
       .post(`/service-request/${ticketNumber}/retry-awaiting-parts`, data)
       .then((r) => r.data),
 
+  exportXlsx: (search = '', status = 'ALL') =>
+    apiClient
+      .get('/service-request/export/xlsx', {
+        params: { search, status },
+        responseType: 'blob',
+      })
+      .then((r) => r.data as Blob),
+
   createInvoice: async (ticketNumber: string) => {
     const invoice = await apiClient
       .post(`/finance/invoices/from-sr/${ticketNumber}`)

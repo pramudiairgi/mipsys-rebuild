@@ -154,6 +154,16 @@ export const financeApi = {
     return response.data;
   },
 
+  getPpnConfig: async (): Promise<{ ppnRate: number; ppnFormula: string; ppnRounding: string; ppnInclusive: boolean }> => {
+    const response = await apiClient.get('/finance/settings/ppn-config');
+    return response.data;
+  },
+
+  updatePpnConfig: async (cfg: { ppnRate: number; ppnFormula: string; ppnRounding: string; ppnInclusive: boolean }) => {
+    const response = await apiClient.patch('/finance/settings/ppn-config', cfg);
+    return response.data;
+  },
+
   // --- Export ---
   exportInvoiceXlsx: async (id: number) => {
     const response = await apiClient.get(

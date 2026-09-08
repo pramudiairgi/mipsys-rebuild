@@ -65,7 +65,7 @@ export class ReportService {
       totalInvoices: paidInvoices.length,
       totalDpp,
       totalPpn,
-      ppnRate: paidInvoices.length > 0 ? paidInvoices[0].ppnRate : 11,
+      ppnRate: paidInvoices.length > 0 ? Number(paidInvoices[0].ppnRate) || 11 : 11,
     };
   }
 

@@ -13,12 +13,15 @@ import {
   serviceRequests,
   customers,
   products,
+  staff,
   StatusService,
   orderParts,
   spareParts,
 } from '../database/schema';
+import { alias } from 'drizzle-orm/pg-core';
 import { StatusServiceType } from '../database/schema/common.enums';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
+import ExcelJS from 'exceljs';
 import { DiagnoseSrDto } from './dto/diagnose-sr.dto';
 import { SaveQuoteDto } from './dto/save-quote.dto';
 import { CancelQuoteDto } from './dto/cancel-quote.dto';
@@ -104,6 +107,185 @@ export class ServiceRequestService {
       this.logger.error('[GET_ALL_SR_ERROR]', error);
       throw new InternalServerErrorException('Gagal menarik daftar servis.');
     }
+  }
+
+  async exportXlsx(filters: { search?: string; status?: string }): Promise<Buffer> {
+    const { search, status } = filters;
+    const conditions: SQL[] = [];
+    if (search) {
+      const searchCondition = or(
+        like(serviceRequests.ticketNumber, `%${search}%`),
+        like(customers.name, `%${search}%`),
+        like(products.modelName, `%${search}%`),
+        like(products.serialNumber, `%${search}%`),
+      );
+      if (searchCondition) conditions.push(searchCondition);
+    }
+    if (status && status !== 'ALL') {
+      conditions.push(eq(serviceRequests.statusService, status as StatusServiceType));
+    }
+    const adminStaff = alias(staff, 'admin_staff');
+    const techStaff = alias(staff, 'tech_staff');
+    const rows = await this.db
+      .select({
+        ticketNumber: serviceRequests.ticketNumber,
+        customerName: customers.name,
+        customerPhone: customers.phone,
+        customerType: customers.customerType,
+        customerAddress: customers.address,
+        modelName: products.modelName,
+        serialNumber: products.serialNumber,
+        problemDescription: serviceRequests.problemDescription,
+        adminName: adminStaff.name,
+        techName: techStaff.name,
+        incomingDate: serviceRequests.incomingDate,
+        checkDate: serviceRequests.checkDate,
+        spDate: serviceRequests.spDate,
+        approveDate: serviceRequests.approveDate,
+        readyDate: serviceRequests.readyDate,
+        closeDate: serviceRequests.closeDate,
+        pickUpDate: serviceRequests.pickUpDate,
+        statusService: serviceRequests.statusService,
+        statusSystem: serviceRequests.statusSystem,
+        serviceFee: serviceRequests.serviceFee,
+      })
+      .from(serviceRequests)
+      .leftJoin(customers, eq(serviceRequests.customerId, customers.id))
+      .leftJoin(products, eq(serviceRequests.productId, products.id))
+      .leftJoin(adminStaff, eq(serviceRequests.adminId, adminStaff.id))
+      .leftJoin(techStaff, eq(serviceRequests.technicianCheckId, techStaff.id))
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(serviceRequests.createdAt));
+
+    const statusLabel: Record<string, string> = {
+      WAITING_CHECK: 'Pending',
+      CHECK: 'Check',
+      WAITING_APPROVE: 'Menunggu Approve',
+      SERVICE: 'In Service',
+      AWAITING_PARTS: 'Menunggu Part',
+      DONE: 'Ready',
+      CLOSED: 'Closed',
+      CANCEL: 'Cancelled',
+      CANCELLED: 'Cancelled',
+    };
+
+    const fmtDate = (v: string | null | undefined) =>
+      v ? new Date(v).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
+    const calcDurasi = (start: string | null | undefined, end: string | null | undefined) => {
+      if (!start) return '-';
+      const s = new Date(start).getTime();
+      const e = end ? new Date(end).getTime() : Date.now();
+      if (isNaN(s) || isNaN(e)) return '-';
+      const diff = Math.ceil((e - s) / 86400000);
+      return diff < 0 ? '0' : String(diff);
+    };
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Summary Report', {
+      pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    });
+
+    ws.columns = [
+      { header: 'No', key: 'no', width: 6 },
+      { header: 'No. SR', key: 'ticketNumber', width: 18 },
+      { header: 'Pelanggan', key: 'customerName', width: 22 },
+      { header: 'No. Telepon', key: 'customerPhone', width: 16 },
+      { header: 'Customer Type', key: 'customerType', width: 14 },
+      { header: 'Alamat', key: 'customerAddress', width: 28 },
+      { header: 'Model', key: 'modelName', width: 16 },
+      { header: 'Serial', key: 'serialNumber', width: 18 },
+      { header: 'Problem Description', key: 'problemDescription', width: 40 },
+      { header: 'Admin', key: 'adminName', width: 16 },
+      { header: 'Check By', key: 'techName', width: 16 },
+      { header: 'Tgl Masuk', key: 'incomingDate', width: 12 },
+      { header: 'Check Date', key: 'checkDate', width: 12 },
+      { header: 'SP Date', key: 'spDate', width: 12 },
+      { header: 'Approve Date', key: 'approveDate', width: 13 },
+      { header: 'Ready Date', key: 'readyDate', width: 12 },
+      { header: 'Close Date', key: 'closeDate', width: 12 },
+      { header: 'Pick Up Date', key: 'pickUpDate', width: 13 },
+      { header: 'Status', key: 'status', width: 16 },
+      { header: 'Status System', key: 'statusSystem', width: 13 },
+      { header: 'Service Fee', key: 'serviceFee', width: 14 },
+      { header: 'Durasi (hari)', key: 'durasi', width: 11 },
+    ];
+
+    const headerRow = ws.getRow(1);
+    headerRow.eachCell((cell) => {
+      cell.font = { name: 'Calibri', bold: true, size: 9, color: { argb: 'FFF8FAFC' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A2E1A' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF334155' } },
+        bottom: { style: 'thin', color: { argb: 'FF334155' } },
+        left: { style: 'thin', color: { argb: 'FF334155' } },
+        right: { style: 'thin', color: { argb: 'FF334155' } },
+      };
+    });
+    headerRow.height = 26;
+    headerRow.commit();
+
+    rows.forEach((r, idx) => {
+      const durasi = calcDurasi(r.incomingDate, r.closeDate || r.pickUpDate);
+      const row = ws.addRow({
+        no: idx + 1,
+        ticketNumber: r.ticketNumber,
+        customerName: r.customerName || '-',
+        customerPhone: r.customerPhone || '-',
+        customerType: r.customerType || '-',
+        customerAddress: r.customerAddress || '-',
+        modelName: r.modelName || '-',
+        serialNumber: r.serialNumber || '-',
+        problemDescription: r.problemDescription || '-',
+        adminName: r.adminName || '-',
+        techName: r.techName || '-',
+        incomingDate: fmtDate(r.incomingDate),
+        checkDate: fmtDate(r.checkDate),
+        spDate: fmtDate(r.spDate),
+        approveDate: fmtDate(r.approveDate),
+        readyDate: fmtDate(r.readyDate),
+        closeDate: fmtDate(r.closeDate),
+        pickUpDate: fmtDate(r.pickUpDate),
+        status: r.statusService ? statusLabel[r.statusService] ?? r.statusService : '-',
+        statusSystem: r.statusSystem || '-',
+        serviceFee: r.serviceFee ? Number(r.serviceFee).toLocaleString('id-ID') : '0',
+        durasi,
+      });
+      row.eachCell((cell, colNumber) => {
+        cell.font = { name: 'Calibri', size: 9, color: { argb: 'FF1E293B' } };
+        cell.alignment = {
+          horizontal: colNumber === 1 || colNumber >= 12 ? 'center' : colNumber === 9 || colNumber === 6 ? 'left' : 'left',
+          vertical: 'middle',
+          wrapText: colNumber === 9 || colNumber === 6,
+        };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        };
+      });
+      if (row.getCell(9).value && String(row.getCell(9).value).length > 40) row.height = 30;
+      if (idx % 2 === 1) {
+        row.eachCell((cell) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+        });
+      }
+      row.commit();
+    });
+
+    if (rows.length === 0) {
+      const row = ws.addRow({ ticketNumber: 'Tidak ada data' });
+      ws.mergeCells(`B2:V2`);
+      row.getCell(2).alignment = { horizontal: 'center' };
+      row.getCell(2).font = { name: 'Calibri', italic: true, size: 10, color: { argb: 'FF64748B' } };
+    }
+
+    ws.autoFilter = { from: 'A1', to: 'V1' };
+    ws.views = [{ state: 'frozen', ySplit: 1, xSplit: 2 }];
+
+    const buffer = await wb.xlsx.writeBuffer();
+    return Buffer.from(buffer);
   }
 
   async findOne(ticketNumber: string) {

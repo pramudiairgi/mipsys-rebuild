@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Loader2, ExternalLink, ArrowLeft, ArrowRight } from 'lucide-react';
 import { srApi } from '../api/sr-api';
 import { SrFilterBar } from './SrFilterBar';
+import { SrExportButton } from './SrExportButton';
 import { EmptyState } from '@/src/components/ui/empty-state';
 import { Badge } from '@/src/components/ui/badge';
 import { Button } from '@/src/components/ui/button';
@@ -157,7 +158,9 @@ export function SrDashboard() {
       <PageHeader
         title="Service Request"
         subtitle="Daftar seluruh tiket permintaan servis di sistem MiPSys."
-      />
+      >
+        <SrExportButton search={searchTerm} status={activeFilter} />
+      </PageHeader>
 
       <SrFilterBar
         searchInput={searchInput}

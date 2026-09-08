@@ -6,6 +6,7 @@ import {
   UserCheck,
   Package,
   Tags,
+  Percent,
   Plus,
   Pencil,
   Trash2,
@@ -26,8 +27,9 @@ import { toast } from 'react-hot-toast';
 import { masterDataApi } from '@/src/features/master-data/api/master-data-api';
 import type { CustomerData, StaffData, ProductData, CategoryModelData } from '@/src/features/master-data/api/master-data-api';
 import { useAuth } from '@/src/lib/auth-context';
+import { financeApi } from '@/src/features/finance/api/finance-api';
 
-type TabType = 'customers' | 'staff' | 'products' | 'category-models';
+type TabType = 'customers' | 'staff' | 'products' | 'category-models' | 'ppn-config';
 
 interface ModalState {
   open: boolean;
@@ -40,6 +42,7 @@ const tabs = [
   { id: 'staff' as TabType, label: 'Staff', icon: <UserCheck size={16} aria-hidden="true" /> },
   { id: 'products' as TabType, label: 'Produk', icon: <Package size={16} aria-hidden="true" /> },
   { id: 'category-models' as TabType, label: 'Model', icon: <Tags size={16} aria-hidden="true" /> },
+  { id: 'ppn-config' as TabType, label: 'PPN', icon: <Percent size={16} aria-hidden="true" /> },
 ];
 
 export default function MasterDataPage() {
@@ -59,6 +62,9 @@ export default function MasterDataPage() {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ id: number } | null>(null);
+  const [ppnConfig, setPpnConfig] = useState<{ ppnRate: number; ppnFormula: string; ppnRounding: string; ppnInclusive: boolean } | null>(null);
+  const [ppnLoading, setPpnLoading] = useState(false);
+  const [ppnSaving, setPpnSaving] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -83,6 +89,13 @@ export default function MasterDataPage() {
     setMounted(true);
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'ppn-config') {
+      setPpnLoading(true);
+      financeApi.getPpnConfig().then(setPpnConfig).catch(() => toast.error('Gagal memuat konfigurasi PPN')).finally(() => setPpnLoading(false));
+    }
+  }, [activeTab]);
 
   const openCreate = () => {
     setFormData({});
@@ -372,7 +385,21 @@ export default function MasterDataPage() {
       case 'staff': return filteredStaff;
       case 'products': return filteredProducts;
       case 'category-models': return filteredModels;
+      case 'ppn-config': return [];
     }
+  };
+
+  const handleSavePpn = async () => {
+    if (!ppnConfig) return;
+    setPpnSaving(true);
+    try {
+      const updated = await financeApi.updatePpnConfig(ppnConfig);
+      setPpnConfig(updated);
+      toast.success('Konfigurasi PPN berhasil disimpan');
+    } catch {
+      toast.error('Gagal menyimpan konfigurasi PPN');
+    }
+    setPpnSaving(false);
   };
 
   if (!mounted) return null;
@@ -400,33 +427,97 @@ export default function MasterDataPage() {
         ))}
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4">
-        <SearchBar
-          value={searchTerm}
-          onChange={setSearchTerm}
-          placeholder={`Cari ${activeTab === 'customers' ? 'pelanggan' : activeTab === 'staff' ? 'staff' : activeTab === 'products' ? 'produk' : 'model'}...`}
-        />
-        {isAdmin && (
-          <Button onClick={openCreate} className="bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-[var(--primary-foreground)] font-black px-6 py-6 rounded-2xl shadow-lg flex gap-2 uppercase text-xs tracking-widest border-none shrink-0">
-            <Plus size={16} strokeWidth={3} aria-hidden="true" /> Tambah Data
-          </Button>
-        )}
-      </div>
+      {activeTab === 'ppn-config' ? (
+        <div className="glass-panel rounded-[2rem] p-6 md:p-8 space-y-6 border border-border/20">
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-widest text-[var(--foreground)] flex items-center gap-2"><Percent size={16} /> Rumus PPN</h3>
+            <p className="text-xs text-[var(--muted-foreground)] mt-1">Atur cara perhitungan PPN untuk invoice. Berlaku untuk invoice baru; invoice lama tetap pakai snapshot rate.</p>
+          </div>
+          {ppnLoading || !ppnConfig ? (
+            <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)] py-8"><Loader2 className="motion-safe:animate-spin" size={16} /> Memuat konfigurasi…</div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Tarif PPN (%)</Label>
+                  <Input type="number" step="0.25" min={0} max={100} value={String(ppnConfig.ppnRate)} onChange={(e) => setPpnConfig({ ...ppnConfig, ppnRate: parseFloat(e.target.value) || 0 })} className="h-11 rounded-xl border-2 font-bold" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Rumus</Label>
+                  <select value={ppnConfig.ppnFormula} onChange={(e) => setPpnConfig({ ...ppnConfig, ppnFormula: e.target.value })} className="w-full h-11 rounded-xl border-2 bg-transparent px-3 font-bold outline-none">
+                    <option value="EXCLUSIVE">EXCLUSIVE (PPN di atas DPP)</option>
+                    <option value="INCLUSIVE">INCLUSIVE (PPN di dalam total)</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Pembulatan</Label>
+                  <select value={ppnConfig.ppnRounding} onChange={(e) => setPpnConfig({ ...ppnConfig, ppnRounding: e.target.value })} className="w-full h-11 rounded-xl border-2 bg-transparent px-3 font-bold outline-none">
+                    <option value="HALF_UP">HALF_UP (toFixed 2 + Math.round)</option>
+                    <option value="NONE">NONE (tanpa pembulatan)</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Mode Inclusive</Label>
+                  <select value={String(ppnConfig.ppnInclusive)} onChange={(e) => setPpnConfig({ ...ppnConfig, ppnInclusive: e.target.value === 'true' })} className="w-full h-11 rounded-xl border-2 bg-transparent px-3 font-bold outline-none">
+                    <option value="false">Tidak — pakai Rumus</option>
+                    <option value="true">Ya — paksa Inclusive</option>
+                  </select>
+                </div>
+              </div>
+              <div className="paper-card rounded-2xl p-4 border border-border/20 space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Preview (contoh DPP 1.000.000)</p>
+                {(() => {
+                  const subtotal = 1000000;
+                  const rate = ppnConfig.ppnRate;
+                  const inclusive = ppnConfig.ppnInclusive || ppnConfig.ppnFormula === 'INCLUSIVE';
+                  let ppn: number; let total: number;
+                  if (inclusive) { total = subtotal; ppn = total * rate / (100 + rate); if (ppnConfig.ppnRounding !== 'NONE') ppn = Number(ppn.toFixed(2)); } else { ppn = ppnConfig.ppnRounding === 'NONE' ? subtotal * rate / 100 : Math.round(subtotal * rate / 100); total = subtotal + ppn; }
+                  return (
+                    <div className="flex justify-between text-sm font-bold">
+                      <span className="text-[var(--muted-foreground)]">DPP Rp 1.000.000 → PPN {rate}% = Rp {Math.round(ppn).toLocaleString('id-ID')} → Total Rp {Math.round(total).toLocaleString('id-ID')}</span>
+                      <span className="text-[var(--primary)]">{inclusive ? 'INCLUSIVE' : 'EXCLUSIVE'} / {ppnConfig.ppnRounding}</span>
+                    </div>
+                  );
+                })()}
+                <p className="text-[10px] text-[var(--muted-foreground)] italic">Perubahan hanya berlaku untuk invoice yang dibuat setelah disimpan.</p>
+              </div>
+              <Button onClick={handleSavePpn} disabled={ppnSaving} className="h-12 rounded-2xl bg-[var(--primary)] hover:bg-[var(--primary)]/90 font-black text-xs uppercase tracking-widest px-8">
+                {ppnSaving ? <Loader2 size={16} className="motion-safe:animate-spin" /> : <Check size={16} />} Simpan Konfigurasi
+              </Button>
+            </>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col md:flex-row gap-4">
+            <SearchBar
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder={`Cari ${activeTab === 'customers' ? 'pelanggan' : activeTab === 'staff' ? 'staff' : activeTab === 'products' ? 'produk' : 'model'}...`}
+            />
+            {isAdmin && (
+              <Button onClick={openCreate} className="bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-[var(--primary-foreground)] font-black px-6 py-6 rounded-2xl shadow-lg flex gap-2 uppercase text-xs tracking-widest border-none shrink-0">
+                <Plus size={16} strokeWidth={3} aria-hidden="true" /> Tambah Data
+              </Button>
+            )}
+          </div>
 
-      <DataTable
-        columns={getColumns()}
-        data={getData()}
-        keyExtractor={(item: any) => item.id}
-        isLoading={loading}
-        headerTitle={
-          <>{tabs.find((t) => t.id === activeTab)?.icon} Data {tabs.find((t) => t.id === activeTab)?.label}</>
-        }
-        footer={
-          <p className="text-[10px] font-black text-[var(--muted-foreground)] uppercase tracking-widest italic">
-            Data master untuk referensi sistem
-          </p>
-        }
-      />
+          <DataTable
+            columns={getColumns()}
+            data={getData()}
+            keyExtractor={(item: any) => item.id}
+            isLoading={loading}
+            headerTitle={
+              <>{tabs.find((t) => t.id === activeTab)?.icon} Data {tabs.find((t) => t.id === activeTab)?.label}</>
+            }
+            footer={
+              <p className="text-[10px] font-black text-[var(--muted-foreground)] uppercase tracking-widest italic">
+                Data master untuk referensi sistem
+              </p>
+            }
+          />
+        </>
+      )}
 
       <ConfirmModal
         open={!!confirmDelete}
