@@ -8,7 +8,9 @@ import {
   HttpStatus,
   Get,
   Query,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { ServiceRequestService } from './service-requests.service';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { DiagnoseSrDto } from './dto/diagnose-sr.dto';
@@ -37,6 +39,21 @@ export class ServiceRequestsController {
       limit: limit ? parseInt(limit, 10) : 10,
       status,
     });
+  }
+
+  @Get('export/xlsx')
+  async exportXlsx(
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+    @Res() res?: Response,
+  ) {
+    const buffer = await this.serviceRequestService.exportXlsx({ search, status });
+    const date = new Date().toISOString().slice(0, 10);
+    res!.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="summary-report-${date}.xlsx"`,
+    });
+    res!.end(buffer);
   }
 
   @Get('activities')
