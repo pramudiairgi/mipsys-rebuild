@@ -16,12 +16,14 @@ describe('FinanceService - generateInvoiceNumber (TDD RED)', () => {
         serviceRequests: { findFirst: jest.fn().mockResolvedValue({ id: 25, ticketNumber: 'SR-20260824-0025' }) },
         financeSettings: {
           findFirst: jest.fn().mockImplementation(async ({ where }: any) => {
-            // drizzle-orm eq helper returns SQL object, we just check counterValue mock
-            // Simulate: if querying counter key, return counterValue, if ppn_rate return 11
-            // For test simplicity, we track calls
-            // This mock will be overridden per test
             return null;
           }),
+          findMany: jest.fn().mockResolvedValue([
+            { key: 'ppn_rate', value: '11' },
+            { key: 'ppn_formula', value: 'EXCLUSIVE' },
+            { key: 'ppn_rounding', value: 'HALF_UP' },
+            { key: 'ppn_inclusive', value: 'false' },
+          ]),
         },
       },
       insert: jest.fn().mockReturnValue({
@@ -123,18 +125,18 @@ describe('FinanceService - generateInvoiceNumber (TDD RED)', () => {
 
     // Now test: the generateInvoiceNumber should be called via create()
     // We will call create and check invoiceNumber
-    // Need to mock financeSettings for getPpnRate also
+    // Need to mock financeSettings for getPpnConfig (findMany) and counter (findFirst)
     let callCount = 0;
     mockDb.query.financeSettings.findFirst = jest.fn().mockImplementation(async () => {
       callCount++;
-      // First findFirst after update is for generateInvoiceNumber counter read
-      // Second is for getPpnRate? Actually order is generateInvoiceNumber first, then getPpnRate
-      // So callCount 1 = counter read, callCount 2 = ppn_rate read
-      if (callCount === 1) {
-        return { key: `inv_counter_${period}`, value: counterValue };
-      }
-      return { key: 'ppn_rate', value: '11' };
+      return { key: `inv_counter_${period}`, value: counterValue };
     });
+    mockDb.query.financeSettings.findMany = jest.fn().mockResolvedValue([
+      { key: 'ppn_rate', value: '11' },
+      { key: 'ppn_formula', value: 'EXCLUSIVE' },
+      { key: 'ppn_rounding', value: 'HALF_UP' },
+      { key: 'ppn_inclusive', value: 'false' },
+    ]);
 
     const dto: any = {
       ticketNumber: 'SR-TEST-001',
@@ -182,10 +184,14 @@ describe('FinanceService - generateInvoiceNumber (TDD RED)', () => {
     const now = new Date();
     const period = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
     mockDb.query.financeSettings.findFirst = jest.fn().mockImplementation(async () => {
-      // Return counter then ppn
-      // Use simple counter increment simulation
       return { key: `inv_counter_${period}`, value: counter };
     });
+    mockDb.query.financeSettings.findMany = jest.fn().mockResolvedValue([
+      { key: 'ppn_rate', value: '11' },
+      { key: 'ppn_formula', value: 'EXCLUSIVE' },
+      { key: 'ppn_rounding', value: 'HALF_UP' },
+      { key: 'ppn_inclusive', value: 'false' },
+    ]);
     // Mock insert/update to simulate increment to 2
     mockDb.insert = jest.fn().mockReturnValue({
       values: jest.fn().mockReturnValue({
