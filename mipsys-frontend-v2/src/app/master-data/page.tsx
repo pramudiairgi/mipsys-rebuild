@@ -47,7 +47,9 @@ const tabs = [
 
 export default function MasterDataPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const visibleTabs = tabs.filter((t) => t.id !== 'ppn-config' || isSuperAdmin);
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('customers');
   const [searchTerm, setSearchTerm] = useState('');
@@ -91,11 +93,15 @@ export default function MasterDataPage() {
   }, []);
 
   useEffect(() => {
+    if (activeTab === 'ppn-config' && !isSuperAdmin) {
+      setActiveTab('customers');
+      return;
+    }
     if (activeTab === 'ppn-config') {
       setPpnLoading(true);
       financeApi.getPpnConfig().then(setPpnConfig).catch(() => toast.error('Gagal memuat konfigurasi PPN')).finally(() => setPpnLoading(false));
     }
-  }, [activeTab]);
+  }, [activeTab, isSuperAdmin]);
 
   const openCreate = () => {
     setFormData({});
@@ -304,7 +310,7 @@ export default function MasterDataPage() {
           header: 'Role',
           cell: (s: StaffData) => (
             <Badge className={s.role === 'ADMIN' ? 'bg-[var(--primary)]/10 text-[var(--primary)] border-none font-black text-[9px]' : 'bg-amber-100/20 text-amber-400 border-none font-black text-[9px]'}>
-              {s.role === 'ADMIN' ? 'Admin' : 'Teknisi'}
+              {s.role === 'SUPER_ADMIN' ? 'Super Admin' : s.role === 'ADMIN' ? 'Admin' : 'Teknisi'}
             </Badge>
           ),
         },
@@ -412,7 +418,7 @@ export default function MasterDataPage() {
       />
 
       <div className="flex gap-2 bg-[var(--card)] p-2 rounded-2xl border border-border/20 overflow-x-auto">
-        {tabs.map((tab) => (
+        {visibleTabs.map((tab) => (
           <Button
             key={tab.id}
             variant={activeTab === tab.id ? 'default' : 'ghost'}

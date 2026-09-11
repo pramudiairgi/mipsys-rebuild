@@ -55,9 +55,15 @@ async function runSeeder() {
         role: 'TECHNICIAN',
         staffId: 3,
       },
+      {
+        username: 'superadmin',
+        password: defaultPassword,
+        role: 'SUPER_ADMIN',
+        staffId: null,
+      },
     ]);
     console.log(
-      '  ✔ 3 users dibuat (admin:admin123 / budi:admin123 / andi:admin123)'
+      '  ✔ 4 users dibuat (admin:admin123 / budi:admin123 / andi:admin123 / superadmin:admin123)'
     );
 
     // ========================================================================

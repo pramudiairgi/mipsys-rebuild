@@ -25,7 +25,7 @@ export function Sidebar({
   const router = useRouter();
   const { user, logout } = useAuth();
 
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const menuItems = [
     { title: 'Dashboard', icon: <Layout size={20} />, link: '/' },
     {

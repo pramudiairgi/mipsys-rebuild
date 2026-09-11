@@ -34,6 +34,8 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('Akses ditolak: role tidak ditemukan.');
     }
 
+    if (user.role === 'SUPER_ADMIN') return true;
+
     if (!requiredRoles.includes(user.role)) {
       throw new ForbiddenException(
         `Akses ditolak: membutuhkan role ${requiredRoles.join(' atau ')}.`,

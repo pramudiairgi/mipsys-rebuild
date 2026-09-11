@@ -18,8 +18,8 @@ interface PODetailModalProps {
 
 export function PODetailModal({ poId, onClose, onRefresh }: PODetailModalProps) {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
-  const isTechnician = user?.role === 'TECHNICIAN';
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const isTechnician = user?.role === 'TECHNICIAN' || user?.role === 'SUPER_ADMIN';
   const [po, setPo] = useState<PurchaseOrder | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showReceiving, setShowReceiving] = useState(false);

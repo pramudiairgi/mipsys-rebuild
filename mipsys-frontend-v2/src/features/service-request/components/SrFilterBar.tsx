@@ -33,7 +33,7 @@ export const SrFilterBar = React.memo(function SrFilterBar({
   onFilterChange,
 }: SrFilterBarProps) {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   return (
     <div className="space-y-4">
       <form onSubmit={onSearch} className="flex items-center gap-3">

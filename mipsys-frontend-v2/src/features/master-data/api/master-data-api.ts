@@ -11,7 +11,7 @@ export interface CustomerData {
 export interface StaffData {
   id: number;
   name: string;
-  role: 'ADMIN' | 'TECHNICIAN';
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'TECHNICIAN';
 }
 
 export interface ProductData {
@@ -40,7 +40,7 @@ export const masterDataApi = {
   staff: {
     getAll: () =>
       apiClient.get('/staff').then((r) => r.data as StaffData[]),
-    create: (data: { name: string; role: 'ADMIN' | 'TECHNICIAN' }) =>
+    create: (data: { name: string; role: 'SUPER_ADMIN' | 'ADMIN' | 'TECHNICIAN' }) =>
       apiClient.post('/staff', data).then((r) => r.data),
     update: (id: number, data: { name?: string; role?: 'ADMIN' | 'TECHNICIAN' }) =>
       apiClient.patch(`/staff/${id}`, data).then((r) => r.data),

@@ -33,7 +33,7 @@ const PENDING_STATUSES: PoStatus[] = ['DRAFT', 'REQUESTED', 'APPROVED', 'ORDERED
 
 export default function PartOrderPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const { data: orders, isLoading, refetch } = usePurchaseOrders();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<PoStatus | 'ALL'>('ALL');

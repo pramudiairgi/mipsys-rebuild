@@ -10,7 +10,7 @@ import {
 
 @ApiTags('Finance')
 @ApiBearerAuth('access-token')
-@Roles('ADMIN')
+@Roles('SUPER_ADMIN')
 @Controller('finance/settings')
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}

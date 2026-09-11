@@ -39,7 +39,7 @@ import { Button } from '@/src/components/ui/button';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const [activities, setActivities] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
   const [stats, setStats] = useState({

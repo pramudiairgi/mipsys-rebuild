@@ -22,7 +22,7 @@ export const poStatusEnum = pgEnum('po_status', [
   'CANCELLED',
 ]);
 
-export const userRoleEnum = pgEnum('user_role', ['ADMIN', 'TECHNICIAN']);
+export const userRoleEnum = pgEnum('user_role', ['SUPER_ADMIN', 'ADMIN', 'TECHNICIAN']);
 export const serviceTypeEnum = pgEnum('service_type', [
   'WARRANTY',
   'NON_WARRANTY',

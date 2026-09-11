@@ -135,8 +135,8 @@ const ServiceRequestDetail = () => {
   const ticketNumber = params.id as string;
   const { data, setData, isLoading, refetch } = useServiceRequest(ticketNumber);
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
-  const isTechnician = user?.role === 'TECHNICIAN';
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const isTechnician = user?.role === 'TECHNICIAN' || user?.role === 'SUPER_ADMIN';
   const [state, dispatch] = useReducer(detailReducer, INITIAL_STATE);
   const {
     parts,

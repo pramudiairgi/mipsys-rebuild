@@ -22,7 +22,7 @@ import { toast } from 'react-hot-toast';
 
 export default function InventoryPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const [parts, setParts] = useState<SparePart[]>([]);
   const [search, setSearch] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);

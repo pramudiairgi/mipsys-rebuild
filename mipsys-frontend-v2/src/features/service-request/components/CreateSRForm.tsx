@@ -37,7 +37,7 @@ import { Button } from '@/src/components/ui/button';
 export function CreateSRForm() {
   const router = useRouter();
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<SRFormValues>({
